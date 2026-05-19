@@ -93,7 +93,7 @@ export function App() {
             <p class="title-tagline">
               {run()!.outcome === "arrived"
                 ? "you carried the fire to the middle of the world."
-                : "the long walk south ends here."}
+                : "the camp was overrun — too many fires fell, and the long walk south ends here."}
             </p>
             <p class="title-hint">
               dex {run()!.meta.dex.length} · caught {run()!.meta.caught.length} · memorial{" "}

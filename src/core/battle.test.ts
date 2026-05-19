@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { startRun, bondedCinder, type RunState } from "./run";
+import {
+  startRun,
+  bondedCinder,
+  applyEncounterOutcome,
+  recruitFromCaught,
+  type RunState,
+} from "./run";
 import { makeRoute } from "./routemap";
 import { kindle } from "./cinder";
 import {
@@ -247,14 +253,17 @@ describe("battle engine", () => {
     expect(out.campDamage).toBeGreaterThan(0);
   });
 
-  it("a captured result yields capturedName for the run to kindle", () => {
+  it("a captured result yields a CapturedSnapshot for the run to kindle", () => {
     const run = startRun("gotcha");
     const s = startBattle(run, legNode("gotcha"));
     s.result = "captured";
     s.done = true;
     const out = finalizeBattle(s, run, false);
-    expect(out.capturedName).toBe(s.setup.captureName);
+    expect(out.captured).toBeDefined();
+    expect(out.captured!.name).toBe(s.setup.captureName);
     expect(out.campDamage).toBeLessThan(0.1);
+    // The legacy capturedName field is no longer populated by the battle.
+    expect(out.capturedName).toBeUndefined();
   });
 
   it("miscalibration scores calibration distance correctly", () => {
@@ -331,14 +340,14 @@ describe("type wheel + experience (DESIGN.skills §2, §9)", () => {
     expect(snap(s2.you[0].cinder)).toEqual(before);
   });
 
-  it("a capture also pays the fielded fire (foe joins fresh, separately)", () => {
+  it("a capture also pays the fielded fire, and the foe joins with inherited state", () => {
     const r = startRun("capxp");
     const s = startBattle(r, legNode("capxp"));
     const before = s.you[0].cinder.level * 100 + s.you[0].cinder.xp;
     s.result = "captured";
     s.done = true;
     const out = finalizeBattle(s, r, false);
-    expect(out.capturedName).toBe(s.setup.captureName);
+    expect(out.captured?.name).toBe(s.setup.captureName);
     expect(s.you[0].cinder.level * 100 + s.you[0].cinder.xp).toBeGreaterThan(before);
   });
 });
@@ -617,6 +626,106 @@ describe("coherence persists run-wide (DESIGN.md §8 — fights have lasting cos
     expect(s.you[0].down).toBe(true); // benched, can't be fielded
     expect(s.activeYou).toBe(1); // opens on the fire that can fight
     expect(s.you[1].down).toBe(false);
+  });
+});
+
+describe("capture inheritance: the wild's body becomes yours (DESIGN.md §7)", () => {
+  it("the captured snapshot inherits the foe's level + non-anchor skills + coherence wear", () => {
+    // Force a wild battle deep south so the foe has a high level with a real
+    // taught loadout — the inheritance has something to carry.
+    let tested = 0;
+    for (let i = 0; i < 40; i++) {
+      const r = startRun("inh-" + i);
+      r.stageIndex = 7;
+      const s = startBattle(r, legNode("inh-" + i), 0, "grass");
+      if (s.setup.kind !== "wild") continue; // grass is always wild today, but stay defensive
+      // Beat the foe down so the catch lands; record the exact wear we expect.
+      s.foe.coherence = Math.round(s.foe.maxCoherence * 0.3);
+      const expectedLevel = s.foe.cinder.level;
+      const expectedFrac = s.foe.coherence / s.foe.maxCoherence;
+      const nonAnchorIds = s.foe.loadout
+        .filter((m) => m.id !== "negentropic-read" && m.id !== "entropic-blast")
+        .map((m) => m.id);
+      s.result = "captured";
+      s.done = true;
+      const out = finalizeBattle(s, r, false);
+      expect(out.captured).toBeDefined();
+      expect(out.captured!.level).toBe(expectedLevel);
+      expect(out.captured!.coherenceFrac).toBeCloseTo(expectedFrac, 3);
+      // Skills are bounded by 2 (anchors occupy the other slots) and are
+      // strictly non-anchor.
+      expect(out.captured!.skills.length).toBeLessThanOrEqual(2);
+      for (const id of out.captured!.skills) {
+        expect(["negentropic-read", "entropic-blast"]).not.toContain(id);
+        expect(nonAnchorIds).toContain(id);
+      }
+      tested++;
+      if (tested >= 6) break;
+    }
+    expect(tested).toBeGreaterThan(0);
+  });
+
+  it("applying a snapshot kindles the fire at the inherited level with its skills", () => {
+    const r = startRun("apply-rich");
+    r.phase = "encounter";
+    const before = r.circle.length;
+    applyEncounterOutcome(r, {
+      campDamage: 0,
+      captured: {
+        name: "Char",
+        level: 7,
+        skills: ["maxwells-cut", "shannon-jam"],
+        coherenceFrac: 0.4,
+      },
+    });
+    expect(r.circle.length).toBe(before + 1);
+    const cap = r.circle[r.circle.length - 1];
+    expect(cap.name).toBe("Char");
+    expect(cap.level).toBe(7);
+    expect(cap.skills).toEqual(["maxwells-cut", "shannon-jam"]);
+    expect(cap.coherenceFrac).toBeCloseTo(0.4, 5);
+    expect(cap.bonded).toBe(false);
+    // Loadout in a fresh battle: the two starters PLUS the taught skills.
+    const ids = knownLoadout(cap).map((m) => m.id).sort();
+    expect(ids).toEqual(["entropic-blast", "maxwells-cut", "negentropic-read", "shannon-jam"]);
+  });
+
+  it("cross-run carryover stays minimal: meta.caught is {name, stage} only", () => {
+    const r = startRun("crossrun");
+    r.phase = "encounter";
+    applyEncounterOutcome(r, {
+      campDamage: 0,
+      captured: {
+        name: "Slag",
+        level: 9,
+        skills: ["error-correct"],
+        coherenceFrac: 0.5,
+      },
+    });
+    expect(r.meta.caught.length).toBe(1);
+    expect(Object.keys(r.meta.caught[0]).sort()).toEqual(["name", "stage"]);
+    expect(r.meta.caught[0].name).toBe("Slag");
+    // A FRESH run that recruits from the stable kindles at L1 with no skills.
+    const r2 = startRun("crossrun-next");
+    r2.meta.caught = [{ name: "Slag", stage: "Cascade Foothills" }];
+    expect(recruitFromCaught(r2, "Slag")).toBe(true);
+    const fresh = r2.circle[r2.circle.length - 1];
+    expect(fresh.name).toBe("Slag");
+    expect(fresh.level).toBe(1);
+    expect(fresh.skills).toEqual([]);
+    expect(fresh.coherenceFrac).toBe(1);
+  });
+
+  it("the legacy capturedName path still kindles a fresh L1 fire (back-compat)", () => {
+    const r = startRun("legacy-cap");
+    r.phase = "encounter";
+    const before = r.circle.length;
+    applyEncounterOutcome(r, { campDamage: 0, capturedName: "Mote" });
+    expect(r.circle.length).toBe(before + 1);
+    const cap = r.circle[r.circle.length - 1];
+    expect(cap.name).toBe("Mote");
+    expect(cap.level).toBe(1);
+    expect(cap.skills).toEqual([]);
   });
 });
 

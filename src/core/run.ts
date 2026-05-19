@@ -63,9 +63,23 @@ export interface RunMeta {
   memories: string[]; // recovered flashback ids — the memorial gallery
 }
 
+// A captured fire's inheritance from its battle (DESIGN.md §7 — the wild's
+// remaining body becomes yours). Run-scoped: level/skills/coherence drop into
+// THIS run's Circle as a real loot drop. Cross-run carryover (meta.caught)
+// stays minimal — only {name, stage} — so recruiting from the stable in a
+// fresh run still kindles the fire at L1 (roguelite-pure: mid-run drops are
+// powerful, the stable identity is light).
+export interface CapturedSnapshot {
+  name: string; // seeds the fire's identity (art, spectral, manner, baseAcuity)
+  level: number; // inherited from the foe at the moment of catch
+  skills: string[]; // non-anchor techniques inherited from the foe (≤2)
+  coherenceFrac: number; // 0..1 — the wear of the catch, carried into the run
+}
+
 export interface EncounterOutcome {
   campDamage: number; // 0..1 lost from camp integrity
-  capturedName?: string; // a wild pattern kindled into the circle
+  capturedName?: string; // legacy — kindles a fresh L1 fire of this name
+  captured?: CapturedSnapshot; // rich — inherits level/skills/state from the foe
   dex?: DexEntry[]; // species catalogued this encounter
   bondMoment?: string; // a moment the bonded fire remembers
 }
@@ -229,7 +243,21 @@ export function advanceTravel(run: RunState): boolean {
 export function applyEncounterOutcome(run: RunState, out: EncounterOutcome): void {
   if (run.phase !== "encounter") return;
   run.campIntegrity = clamp01(run.campIntegrity - out.campDamage);
-  if (out.capturedName !== undefined) {
+  if (out.captured !== undefined) {
+    // Rich capture: the fire arrives with the wild's level, learned techniques,
+    // and the wear of the catch (DESIGN.md §7 — capture as loot drop, not just
+    // a completion check). kindle gives the identity (art / spectral / manner
+    // from the name); we then overwrite the inherited stats. Vitality is NOT
+    // inherited — it stays at the kindle default, so the catch doesn't punish
+    // a thorough weakening that drained the foe's mana.
+    const snap = out.captured;
+    const cap = kindle(snap.name, false);
+    cap.level = Math.max(1, Math.min(12, Math.round(snap.level)));
+    cap.skills = [...snap.skills];
+    cap.coherenceFrac = clamp01(snap.coherenceFrac);
+    run.circle.push(cap);
+    recordCaught(run, snap.name);
+  } else if (out.capturedName !== undefined) {
     run.circle.push(kindle(out.capturedName, false));
     recordCaught(run, out.capturedName);
   }

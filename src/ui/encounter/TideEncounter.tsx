@@ -8,6 +8,7 @@ import { createSignal, onMount, onCleanup, Show, For } from "solid-js";
 import { bandMeaning, sharpness, spectralFit } from "../../core/reading";
 import { bondedCinder, applyEncounterOutcome, currentStage, stageConditions, type RunState } from "../../core/run";
 import { readProfile, cinderStage, xpProgress, isBurnBright } from "../../core/cinder";
+import { tribeFelt } from "../../core/battle-felt";
 import { makeEncounter, current, readCurrent, decide, tideOutcome, type TideEncounter as Tide } from "../../core/tide";
 import { speciesByName } from "../../core/bestiary";
 import { critterSprite } from "../../core/critterart";
@@ -86,13 +87,13 @@ export function TideEncounter(props: { run: RunState }) {
         <p class="enc-sub">{currentStage(run)} — something crosses your path</p>
 
         <div class="enc-bar">
-          <span>camp</span>
+          <span classList={{ "is-low": tribeFelt(integrity()).low }}>{tribeFelt(integrity()).word}</span>
           <span class="enc-bar-track">
             <span
               class="enc-bar-fill"
               style={{
                 width: `${Math.round(integrity() * 100)}%`,
-                background: integrity() > 0.4 ? "#78aaff" : "#e85656",
+                background: tribeFelt(integrity()).low ? "#e85656" : "#78aaff",
               }}
             />
           </span>

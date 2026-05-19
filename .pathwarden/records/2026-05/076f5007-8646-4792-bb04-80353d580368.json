@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "076f5007-8646-4792-bb04-80353d580368",
+  "recorded_at": "2026-05-19T02:26:25.737Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/run.ts",
+  "description": "Add CapturedSnapshot type and extend EncounterOutcome with rich capture path; Apply rich captured snapshot in applyEncounterOutcome with legacy fallback",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "a098936d1e53b42727c3cebc65bee254fc4c9817e1152b45bad6c95977b5e1d5",
+    "post_hash": "f47dc744df198feec5857e8d91a0a8a89da6a79545c1d7199735c13c87c9e728"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/run.ts",
+    "head": "16031a160ce8560cc84d55413d9c562d4e2b9521",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

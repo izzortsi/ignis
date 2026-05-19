@@ -10,6 +10,7 @@ import {
   growthFelt,
   teachFelt,
   absorbFelt,
+  tribeFelt,
   condWord,
   barFelt,
   type StatKind,
@@ -97,6 +98,17 @@ describe("battle-felt (the no-numbers firewall)", () => {
   it("absorbFelt names the fire and stays felt-only", () => {
     expect(absorbFelt("Ash")).toContain("Ash");
     expect(absorbFelt("Ash")).not.toMatch(/[0-9%]/);
+  });
+
+  it("tribeFelt: felt bands, low flag near the wipe, clamps", () => {
+    expect(tribeFelt(1).low).toBe(false);
+    expect(tribeFelt(1).word).not.toMatch(/[0-9%]/);
+    expect(tribeFelt(0).low).toBe(true); // broken → warn
+    expect(tribeFelt(0.1).low).toBe(true); // near the wipe → warn
+    expect(tribeFelt(0.7).low).toBe(false); // healthy → no warn
+    expect(tribeFelt(2).word).toBe(tribeFelt(1).word); // clamps high
+    expect(tribeFelt(-1).low).toBe(true); // clamps low
+    expect(tribeFelt(1).word).not.toBe(tribeFelt(0).word); // distinct bands
   });
 });
 

@@ -35,6 +35,7 @@ import {
   extinguishFire,
   type RunState,
   type EncounterOutcome,
+  type CapturedSnapshot,
 } from "./run";
 import type { MapNode } from "./routemap";
 
@@ -765,21 +766,45 @@ export function finalizeBattle(s: BattleState, run: RunState, staked: boolean): 
   }
 
   if (s.result === "captured") {
+    // The wild's body becomes yours (DESIGN.md §7 — capture as loot drop):
+    // inherit the foe's level, its non-anchor techniques (capped at 2 — the
+    // anchors occupy the other two loadout slots), and the coherence wear
+    // from the catch. The new wild-pool name seeds the identity; everything
+    // else is run-scoped state lifted off the foe. Vitality is intentionally
+    // not inherited — it stays at the kindle default so a thorough weakening
+    // doesn't punish the catch (the player ground the foe's mana down on
+    // purpose to make the catch land).
+    const foeC = s.foe.cinder;
+    const inheritedSkills = s.foe.loadout
+      .filter((m) => !isAnchor(m))
+      .map((m) => m.id)
+      .slice(0, 2);
+    const captured: CapturedSnapshot = {
+      name: s.setup.captureName,
+      level: foeC.level,
+      skills: inheritedSkills,
+      coherenceFrac: clamp01(s.foe.coherence / Math.max(1, s.foe.maxCoherence)),
+    };
     return {
-      campDamage: 0.02,
-      capturedName: s.setup.captureName,
-      bondMoment: staked && run.circle[0].bonded ? `staked all and took ${s.setup.captureName}` : `kindled ${s.setup.captureName} from the wild`,
+      campDamage: 0, // a clean capture costs the tribe nothing
+      captured,
+      bondMoment: staked && run.circle[0].bonded
+        ? `staked all and took ${s.setup.captureName}`
+        : `kindled ${s.setup.captureName} from the wild`,
     };
   }
   if (s.result === "win") {
-    const lost = s.you.reduce((a, c) => a + (1 - c.coherence / c.maxCoherence), 0) / Math.max(1, s.you.length);
-    const out: EncounterOutcome = { campDamage: clamp(0.12 * lost, 0, 0.2) };
+    // Winning never bleeds the tribe — only losses overrun the camp.
+    const out: EncounterOutcome = { campDamage: 0 };
     if (run.circle[0].bonded) out.bondMoment = `out-read ${s.setup.foeName} at the ridge`;
     return out;
   }
   if (s.result === "lose") {
     if (staked) extinguishFire(run, fielded); // the snuff (bonded → memorial + re-ember)
-    return { campDamage: staked ? 0.35 : 0.5 };
+    // Softened (PROVISIONAL): a loss is a real blow but not a 2-strike end —
+    // the tribe takes several to be overrun. Staked loss costs less (the fire
+    // paid with itself). Felt-surfaced (no number) so the drain is legible.
+    return { campDamage: staked ? 0.15 : 0.2 };
   }
   // fled / walked
   return { campDamage: s.result === "fled" ? 0.05 : 0 };

@@ -116,6 +116,23 @@ export function absorbFelt(name: string): string {
   return `${name} draws the wild's craft into itself — a new technique`;
 }
 
+// The tribe / camp integrity (the run's true life — losing it ends the run as
+// "tribe-wiped"). Felt bands only, never the number (§1.4). `low` flags the
+// warning territory so the UI can colour it and warn before the wipe.
+export interface TribeFelt {
+  word: string;
+  low: boolean; // near the wipe — warn
+}
+export function tribeFelt(frac: number): TribeFelt {
+  const f = clamp01(frac);
+  if (f <= 0) return { word: "the tribe is broken", low: true };
+  if (f < 0.2) return { word: "the tribe is all but broken", low: true };
+  if (f < 0.4) return { word: "the tribe is failing", low: true };
+  if (f < 0.62) return { word: "the tribe is wearied", low: false };
+  if (f < 0.85) return { word: "the tribe holds", low: false };
+  return { word: "the tribe stands whole", low: false };
+}
+
 // Diegetic words for in-battle states (plus the read-through canon states).
 export function condWord(c: Condition | "guttering" | "starved" | "burn-bright"): string {
   switch (c) {

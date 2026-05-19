@@ -2202,6 +2202,23 @@ html[data-view-mode="desktop"] .settings-panel {
   pointer-events: none;
   z-index: 10;
 }
+/* Felt tribe/camp-integrity status — the run's true life, surfaced (no
+   numbers) so the "tribe-wiped" end is legible (DESIGN.md §8). */
+.camp-status {
+  position: fixed;
+  left: 50%;
+  bottom: 5vh;
+  transform: translateX(-50%);
+  margin: 0;
+  color: #7a8090;
+  font-family: ui-monospace, "DejaVu Sans Mono", "Courier New", monospace;
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+}
+.camp-status.is-low { color: var(--danger-strong); font-weight: bold; }
+.enc-tribe { color: #7a8090; margin: 0; font-size: 0.9em; }
+.enc-tribe.is-low { color: var(--danger-strong); font-weight: bold; }
 
 /* === Solid encounter scenes (Tide / Duel) ============================== */
 .enc-root {

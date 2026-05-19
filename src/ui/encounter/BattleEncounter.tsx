@@ -31,6 +31,7 @@ import {
   typeWord,
   growthFelt,
   absorbFelt,
+  tribeFelt,
   barFelt,
   type StatKind,
 } from "../../core/battle-felt";
@@ -84,6 +85,11 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
     const took = lead && lead.cinder.skills.length > sk0
       ? " " + absorbFelt(lead.cinder.name)
       : "";
+    // Warn before the wipe: the blow landed, the tribe survives but is failing.
+    const tf = tribeFelt(run.campIntegrity);
+    const warn = run.outcome === "running" && tf.low
+      ? ` The camp can take little more — ${tf.word}.`
+      : "";
     setResultMsg(
       (r === "captured"
         ? captureFelt(true, s.setup.captureName)
@@ -95,7 +101,7 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
               ? "You walk on."
               : staked()
                 ? "Your staked fire is snuffed. The tribe gives a fresh ember."
-                : `You concede to ${s.setup.foeName}.`) + grew + took,
+                : `You concede to ${s.setup.foeName}.`) + grew + took + warn,
     );
     setPhase("result");
   }
@@ -290,6 +296,9 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
               : (props.source ?? "grass") === "rubble" ? "a wild fire stirs in the rubble"
               : "a wild fire flares from the brush"
           }
+        </p>
+        <p class="enc-tribe" classList={{ "is-low": tribeFelt(run.campIntegrity).low }}>
+          {tribeFelt(run.campIntegrity).word}
         </p>
 
         <Show when={phase() === "setup"}>

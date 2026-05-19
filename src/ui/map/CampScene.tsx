@@ -26,7 +26,7 @@ import { reachable, type RouteMap, type MapNode } from "../../core/routemap";
 import { Rng, seedFrom } from "../../rng";
 import { kindle, type Cinder } from "../../core/cinder";
 import { teachableMoves, teachSkill, canTeach } from "../../core/battle";
-import { teachFelt } from "../../core/battle-felt";
+import { teachFelt, tribeFelt } from "../../core/battle-felt";
 import { partsForName, cinderFramesStable, HUE_COLOR } from "../../core/petart";
 import { PLAYER_SPRITE, CINDER_FOLLOW } from "../../screen";
 
@@ -673,6 +673,10 @@ export function CampScene(props: {
         </div>
       </Show>
 
+      <p class="camp-status" classList={{ "is-low": tribeFelt(props.run.campIntegrity).low }}>
+        {tribeFelt(props.run.campIntegrity).word}
+        {tribeFelt(props.run.campIntegrity).low ? " — it can take little more" : ""}
+      </p>
       <p class="camp-hint">arrows: walk · numbered south gates lead onward · [M] the long walk · the Cinder keeps the tally</p>
     </div>
   );
