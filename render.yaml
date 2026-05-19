@@ -1,0 +1,28 @@
+# Render Blueprint — Ludus Ignis is a pure client-side Vite + Solid game,
+# so it deploys as a Static Site (no server/runtime, no env secrets).
+# Connect the repo on Render and it reads this automatically; or configure
+# the same values by hand (see the dashboard steps below / in the PR).
+services:
+  - type: web
+    name: ignis
+    runtime: static
+    # npm ci is reproducible from the committed package-lock.json; the build
+    # script typechecks (tsc --noEmit) then runs `vite build`.
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    # Single-page game: serve index.html for any path (refresh/deep links).
+    # Render still serves real files (hashed assets) first; this only catches
+    # unmatched paths.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+    # Cache the content-hashed build assets aggressively; index.html is
+    # revalidated so a new deploy is picked up immediately.
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
