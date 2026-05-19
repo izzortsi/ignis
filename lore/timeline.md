@@ -1,4 +1,4 @@
-# Ludus Ignis — World Bible (game)
+# Ignis — World Bible (game)
 
 Status: iteration 7. The teaching mission is excised.
 
@@ -24,7 +24,7 @@ Markers:
 
 ## 0. The pivot (iteration 7)
 
-DECIDED: Ludus Ignis is a game, not a teaching tool. Removed: probability
+DECIDED: Ignis is a game, not a teaching tool. Removed: probability
 curriculum, exercise banks, lessons, knowledge/mastery tracking, study mode, the
 21-family taxonomy, the render-to-image PDF pipeline, concept-name revelation.
 

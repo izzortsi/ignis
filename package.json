@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Ludus Ignis — a roguelite creature-collector with tamagotchi care, set in the Ludus Ignis world. See DESIGN.md.",
+  "description": "Ignis — a roguelite creature-collector with tamagotchi care, set in the Ignis world. See DESIGN.md.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

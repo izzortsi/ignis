@@ -1,4 +1,4 @@
-# Ludus Ignis — Game Design Document
+# Ignis — Game Design Document
 
 Status: draft, iteration 1 (the game pivot).
 
@@ -19,7 +19,7 @@ Markers (same convention as the bible):
 
 ## 0. The Pivot
 
-DECIDED: Ludus Ignis is no longer a teaching tool. Removed: the probability curriculum,
+DECIDED: Ignis is no longer a teaching tool. Removed: the probability curriculum,
 exercise banks, lessons, knowledge/mastery tracking, study mode, the 21-family taxonomy,
 the PDF pipeline, concept-name revelation. It is now a **roguelite creature-collector with
 tamagotchi care**, set in the bible's world.

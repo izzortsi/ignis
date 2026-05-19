@@ -61,7 +61,7 @@ export function TitleMenu(props: { onBegin: () => void }) {
   return (
     <div class="title-root">
       <div class="title-card">
-        <h1 class="title-heading">LUDUS&nbsp;&nbsp;IGNIS</h1>
+        <h1 class="title-heading">IGNIS</h1>
         <div class="title-ember">{ember()}</div>
         <p class="title-tagline">{TAGLINE}</p>
 

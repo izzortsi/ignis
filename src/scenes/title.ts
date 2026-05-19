@@ -22,7 +22,7 @@ export class TitleScene implements Scene {
 
   render(screen: Screen): void {
     const midY = Math.floor(screen.rows / 2);
-    screen.textCentered(midY - 4, "LUDUS  IGNIS", Palette.ember);
+    screen.textCentered(midY - 4, "IGNIS", Palette.ember);
     screen.textCentered(midY - 2, "a roguelite of fire, chirality, and the long walk south", Palette.dim);
 
     const glyphs = [".", ":", "*", "o", "*", ":"];

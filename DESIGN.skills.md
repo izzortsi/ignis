@@ -1,4 +1,4 @@
-# Ludus Ignis — Skills & the Informational Type Wheel (proposal)
+# Ignis — Skills & the Informational Type Wheel (proposal)
 
 Status: proposal, iteration 1. Companion to `DESIGN.md` (the GDD); extends
 **§5 the Reading engine** and **§7 Cinder battle**. Lore source of truth stays

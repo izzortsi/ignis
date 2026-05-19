@@ -1,4 +1,4 @@
-# Ludus Ignis — Cinder ASCII Art (design)
+# Ignis — Cinder ASCII Art (design)
 
 Status: design, iteration 1. Companion to `DESIGN.md` (the GDD) and
 `DESIGN.skills.md`. Governs `src/core/petart.ts` (ported from

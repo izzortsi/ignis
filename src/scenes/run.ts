@@ -115,7 +115,7 @@ export class RunScene implements Scene {
 
   render(screen: Screen): void {
     const run = this.run;
-    screen.textCentered(0, "LUDUS  IGNIS — the long walk south", Palette.ember);
+    screen.textCentered(0, "IGNIS — the long walk south", Palette.ember);
 
     if (run.phase === "ended") {
       const won = run.outcome === "arrived";

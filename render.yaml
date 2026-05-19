@@ -1,4 +1,4 @@
-# Render Blueprint — Ludus Ignis is a pure client-side Vite + Solid game,
+# Render Blueprint — Ignis is a pure client-side Vite + Solid game,
 # so it deploys as a Static Site (no server/runtime, no env secrets).
 # Connect the repo on Render and it reads this automatically; or configure
 # the same values by hand (see the dashboard steps below / in the PR).

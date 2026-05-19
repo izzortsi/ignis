@@ -1,6 +1,6 @@
-# Ludus Ignis (game)
+# Ignis (game)
 
-A roguelite creature-collector with tamagotchi care, set in the Ludus Ignis world.
+A roguelite creature-collector with tamagotchi care, set in the Ignis world.
 This repo is **game-first**; it shares only the lore with `/workspace/ludus-ignis`
 (which was a teaching tool — that mission is dropped here, see `DESIGN.md` §0).
 
