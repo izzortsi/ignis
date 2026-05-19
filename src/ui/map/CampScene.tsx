@@ -131,13 +131,13 @@ export function CampScene(props: {
   function doTeach(id: string): void {
     if (taughtThisVisit()) return;
     const c = hearthC();
-    if (c && teachSkill(c, id)) { setTaughtThisVisit(true); bumpRoster(); }
+    if (c && teachSkill(c, id)) { setTaughtThisVisit(true); bumpRoster(0); }
   }
 
   function toggleCaught(name: string): void {
     if (inCircle(props.run, name)) releaseFromCircle(props.run, name);
     else recruitFromCaught(props.run, name);
-    bumpRoster();
+    bumpRoster(0);
   }
 
   // One numbering over EVERY actionable fire so the keys match what's shown:
