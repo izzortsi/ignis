@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "921c50cb-2683-4998-aa29-b608eb88b863",
+  "recorded_at": "2026-05-22T00:07:10.502Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/App.tsx",
+  "description": "Drop per-run determinism — mix fresh entropy into runName",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "88e723fede02c518c5008ff16b429cc3110396378365e87435b4ecfb59937cf5",
+    "post_hash": "12c21be322f2e022c485966a54127b961fe5e7b577a9107ff874545312719f61"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/App.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "0daa0308-d111-4dd7-a3aa-028290c0c135",
+  "recorded_at": "2026-05-22T04:37:26.894Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/encounter/BattleEncounter.tsx",
+  "description": "Import InventoryDialog in BattleEncounter; Add item menu state in BattleEncounter; Add i hotkey and item menu key handling in BattleEncounter; Render item menu dialog in BattleEncounter",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "518c77a61f5da8f5c6f7dd3d81cbf05d56adf551559eff3bf5bfe6f511f06a04",
+    "post_hash": "594e44099cfee164899384999a984da8a7071df716e6ea7f3922adc2aab590d6"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/encounter/BattleEncounter.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

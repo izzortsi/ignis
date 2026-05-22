@@ -6,13 +6,15 @@
 
 import { createSignal, createMemo, onMount, onCleanup, Show, For } from "solid-js";
 import {
-  TERRAIN, MAP_DIMS, FRAMES,
+  buildCampArt, buildPaths, pathCells, pathWalkCells, gateMarkerCells,
+  MAP_DIMS, FRAMES,
   HEARTH_FIRE_FRAMES, CINDER_FIRE_FRAMES,
-  STARS_FIELD, AURORA_FRAMES, AURORA_FRAMES_COUNT, CLIFF_SCREE,
+  AURORA_FRAMES, AURORA_FRAMES_COUNT,
   isWalkable, interactableAt,
   APPRENTICE_SPAWN,
-  type InteractableId,
+  type InteractableId, type PathGate, type GateMarker,
 } from "./map-art";
+import { biomeOf } from "../../core/localmap";
 import {
   recruitFromCaught,
   releaseFromCircle,
@@ -24,9 +26,12 @@ import { FLASHBACKS } from "../../core/flashback";
 import { FLASH_ART, flashThumb, flashFull } from "../flashArt";
 import { reachable, type RouteMap, type MapNode } from "../../core/routemap";
 import { Rng, seedFrom } from "../../rng";
-import { kindle, type Cinder } from "../../core/cinder";
+import { kindle, deepTendFire, type Cinder } from "../../core/cinder";
 import { teachableMoves, teachSkill, canTeach } from "../../core/battle";
 import { teachFelt, tribeFelt } from "../../core/battle-felt";
+import { stageFlavor } from "../../core/stages";
+import { useCache } from "../../core/inventory";
+import { InventoryDialog } from "../inventory/InventoryDialog";
 import { partsForName, cinderFramesStable, HUE_COLOR } from "../../core/petart";
 import { PLAYER_SPRITE, CINDER_FOLLOW } from "../../screen";
 
@@ -105,12 +110,16 @@ export function CampScene(props: {
   // any chosen Circle fire. taughtThisVisit resets every camp visit because
   // CampScene remounts per visit (App's Switch/Match).
   const [hearthFire, setHearthFire] = createSignal(0);
-  const [taughtThisVisit, setTaughtThisVisit] = createSignal(false);
+  // The Hearth has ONE action per camp visit (DESIGN.md §8 revision —
+  // survival vs build): either teach a skill OR deeply tend a fire to brim.
+  const [hearthSpentThisVisit, setHearthSpentThisVisit] = createSignal(false);
+  const [hearthNotice, setHearthNotice] = createSignal("");
   // The constellation route-overview (whole branches). Hotkey M toggles it;
   // the reachable stars are selectable — choosing one takes that leg (the
   // same `onEnterLeg` the south gates call), so the chart IS a route menu.
   const [mapOpen, setMapOpen] = createSignal(false);
   const [mapSel, setMapSel] = createSignal(0);
+  const [inventoryOpen, setInventoryOpen] = createSignal(false);
 
   // Take the i-th reachable branch straight from the chart (i indexes
   // reachable(route) — the same order the south gates are numbered).
@@ -129,9 +138,57 @@ export function CampScene(props: {
   const hearthName = () => { const c = hearthC(); return c ? c.name : "—"; };
   const hearthTeachable = () => { rosterBeat(); const c = hearthC(); return c ? teachableMoves(c) : []; };
   function doTeach(id: string): void {
-    if (taughtThisVisit()) return;
+    if (hearthSpentThisVisit()) return;
     const c = hearthC();
-    if (c && teachSkill(c, id)) { setTaughtThisVisit(true); bumpRoster(0); }
+    if (c && teachSkill(c, id)) { setHearthSpentThisVisit(true); bumpRoster(0); }
+  }
+  // Deep tend — the Hearth pours itself over the entire Circle, fully
+  // restoring every living fire's vitality and coherence. Mutually exclusive
+  // with teaching: one Hearth action per camp visit (DESIGN.md §8 revision).
+  // A snuffed fire is not revived here — only tendFires re-embers a bonded
+  // loss into a fresh Hearth ember.
+  function doDeepTend(): void {
+    if (hearthSpentThisVisit()) return;
+    let any = false;
+    for (const c of props.run.circle) {
+      if (deepTendFire(c)) any = true;
+    }
+    if (any) {
+      setHearthSpentThisVisit(true);
+      setHearthNotice("the Hearth tends the Circle");
+      bumpRoster(0);
+    }
+  }
+
+  function circleNeedsTend(): boolean {
+    for (const c of props.run.circle) {
+      if (c.vitality > 0 && (c.vitality < 1 || c.coherenceFrac < 1)) return true;
+    }
+    return false;
+  }
+
+  // B2.3: cache-powered free tend. Consumes one cache and deep-tends the
+  // whole Circle without spending the Hearth's one action this visit.
+  // Refuses to waste a cache when the Circle is already whole.
+  function doCacheTend(): void {
+    if (!circleNeedsTend()) {
+      setHearthNotice("the Circle is already whole");
+      bumpRoster(0);
+      return;
+    }
+    if (!useCache(props.run.inventory)) {
+      setHearthNotice("no cache to spend");
+      bumpRoster(0);
+      return;
+    }
+    let any = false;
+    for (const c of props.run.circle) {
+      if (deepTendFire(c)) any = true;
+    }
+    if (any) {
+      setHearthNotice("cache spent — the Circle is restored");
+      bumpRoster(0);
+    }
   }
 
   function toggleCaught(name: string): void {
@@ -162,7 +219,52 @@ export function CampScene(props: {
   });
 
   const gates = placeGates(props.route);
-  const gateAt = (rr: number, cc: number) => gates.find((g) => g.row === rr && g.col === cc);
+  // Pass B (DESIGN.md §5): gates are anchors for path geometry but the gate
+  // marker (digit + leg-trigger cell) lives at the END of the path, off the
+  // plateau, where the road meets off-canvas south. Walking onto a marker
+  // cell triggers onEnterLeg.
+  const pathGatesForWalk: PathGate[] = gates.map((g) => ({
+    biome: biomeOf(g.node.rank),
+    gateRow: g.row,
+    gateCol: g.col,
+  }));
+  const walkable = pathWalkCells(pathGatesForWalk);
+  const markers: GateMarker[] = gateMarkerCells(pathGatesForWalk);
+  // gateAt resolves a target cell to its leg by checking marker positions.
+  // markers order matches gates order so gates[idx] gives the right node.
+  const gateAt = (rr: number, cc: number) => {
+    const idx = markers.findIndex((m) => m.row === rr && m.col === cc);
+    return idx >= 0 ? gates[idx] : undefined;
+  };
+
+  // Biome-aware camp art (DESIGN.md §5 / camp-reflects-stage). The Hearth
+  // pit, Cinder vessel, fire frames, aurora, walkability, and plateau shape
+  // all stay constant; the plateau-edge glyph, interior speckle, scree, and
+  // star density shift with the current stage's biome. The terrain build
+  // also receives a skip-set of cells where paths will be — cliff edge isn't
+  // painted there, so the path emerges as a genuine break in the silhouette.
+  const skipCells = createMemo(() => {
+    const pathGates: PathGate[] = gates.map((g) => ({
+      biome: biomeOf(g.node.rank),
+      gateRow: g.row,
+      gateCol: g.col,
+    }));
+    return pathCells(pathGates);
+  });
+  const campArt = createMemo(() => buildCampArt(biomeOf(props.run.stageIndex), skipCells()));
+
+  // Visual paths extending south from each reachable gate (DESIGN.md §5),
+  // biome-textured to hint where the road leads. The shape of the camp's
+  // southern side now shifts with the number of gates — 2 means 2 spokes,
+  // 4 means 4. Re-evaluates when gates change (between legs).
+  const paths = createMemo(() => {
+    const pathGates: PathGate[] = gates.map((g) => ({
+      biome: biomeOf(g.node.rank),
+      gateRow: g.row,
+      gateCol: g.col,
+    }));
+    return buildPaths(pathGates);
+  });
 
   onMount(() => {
     const a = window.setInterval(() => setAuroraTick((t) => (t + 1) % AURORA_FRAMES_COUNT), 140);
@@ -188,7 +290,7 @@ export function CampScene(props: {
       setDialog(id);
       return;
     }
-    if (isWalkable(tr, tc)) {
+    if (isWalkable(tr, tc) || walkable.has(`${tr},${tc}`)) {
       setCinderRow(row()); // the Cinder takes the cell you just left
       setCinderCol(col());
       setRow(tr);
@@ -200,6 +302,20 @@ export function CampScene(props: {
   onMount(() => {
     function onKey(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (inventoryOpen()) {
+        if (e.key === "Escape" || e.key === "Enter" || e.key === "i" || e.key === "I") {
+          e.preventDefault();
+          setInventoryOpen(false);
+        }
+        return;
+      }
+      if (e.key === "i" || e.key === "I") {
+        e.preventDefault();
+        setDialog(null);
+        setMapOpen(false);
+        setInventoryOpen(true);
+        return;
+      }
       if (mapOpen()) {
         e.preventDefault(); // the chart owns input while it's up
         const reach = reachable(props.route);
@@ -246,12 +362,23 @@ export function CampScene(props: {
         }
         if (d === "hearth") {
           // ↑/↓ pick which Circle fire; a digit teaches its Nth eligible
-          // skill (one teach per camp visit). Digits are owned so browser
-          // find never eats them.
+          // skill; T deeply tends the chosen fire. One Hearth action per
+          // camp visit, survival vs build (DESIGN.md §8). Digits are owned
+          // so browser find never eats them.
           if (e.key === "ArrowUp" || e.key === "ArrowDown") {
             e.preventDefault();
             const n = props.run.circle.length;
             if (n > 0) setHearthFire((hearthFire() + (e.key === "ArrowDown" ? 1 : n - 1)) % n);
+            return;
+          }
+          if (e.key === "t" || e.key === "T") {
+            e.preventDefault();
+            doDeepTend();
+            return;
+          }
+          if (e.key === "c" || e.key === "C") {
+            e.preventDefault();
+            doCacheTend();
             return;
           }
           if (e.key >= "1" && e.key <= "9") {
@@ -406,13 +533,15 @@ export function CampScene(props: {
     return lines.join("\n");
   });
 
-  // Static gate layer (numbered markers on the southern band).
+  // Static gate layer — numbered markers at the END of each path (off the
+  // plateau, where the road terminates). Pass B (DESIGN.md §5): walking
+  // onto a marker triggers onEnterLeg via gateAt.
   const gateLayer = createMemo(() => {
     const grid: string[][] = [];
     for (let rr = 0; rr < MAP_DIMS.rows; rr++) grid.push(new Array(MAP_DIMS.cols).fill(" "));
-    gates.forEach((gt, i) => {
-      if (gt.row >= 0 && gt.row < MAP_DIMS.rows && gt.col >= 0 && gt.col < MAP_DIMS.cols) {
-        grid[gt.row][gt.col] = String(i + 1);
+    markers.forEach((m, i) => {
+      if (m.row >= 0 && m.row < MAP_DIMS.rows && m.col >= 0 && m.col < MAP_DIMS.cols) {
+        grid[m.row][m.col] = String(i + 1);
       }
     });
     return grid.map((rw) => rw.join("")).join("\n");
@@ -444,33 +573,27 @@ export function CampScene(props: {
 
   return (
     <div class="camp-root">
-      <div class="map-stage" style={{ "--cols": MAP_DIMS.cols, "--rows": MAP_DIMS.rows }}>
-        <pre class="map-filler">{Array(MAP_DIMS.rows).fill(" ".repeat(MAP_DIMS.cols)).join("\n")}</pre>
-        <pre class="map-layer map-stars">{STARS_FIELD}</pre>
-        <pre class="map-layer map-aurora">{AURORA_FRAMES[auroraTick()]}</pre>
-        <pre class="map-layer map-scree">{CLIFF_SCREE}</pre>
-        <pre class="map-layer map-terrain">{TERRAIN.join("\n")}</pre>
-        <pre class="map-layer map-hearth-fire">{HEARTH_FIRE_FRAMES[fireTick()]}</pre>
-        <pre class="map-layer map-cinder-fire">{CINDER_FIRE_FRAMES[fireTick()]}</pre>
-        <pre class="map-layer map-gates">{gateLayer()}</pre>
-        <pre class="map-layer map-apprentice">{sprite()}</pre>
-      </div>
-
-      <div class="camp-gatelist">
-        <For each={gates}>
-          {(gt, i) => (
-            <button class="camp-gate" onClick={() => props.onEnterLeg(gt.node)}>
-              [{i() + 1}] {dangerWord(gt.node)} south
-            </button>
-          )}
-        </For>
+      <div class="camp-stage-wrap">
+        <div class="map-stage" style={{ "--cols": MAP_DIMS.cols, "--rows": MAP_DIMS.rows }}>
+          <pre class="map-filler">{Array(MAP_DIMS.rows).fill(" ".repeat(MAP_DIMS.cols)).join("\n")}</pre>
+          <pre class="map-layer map-stars">{campArt().stars}</pre>
+          <pre class="map-layer map-aurora">{AURORA_FRAMES[auroraTick()]}</pre>
+          <pre class="map-layer map-scree">{campArt().scree}</pre>
+          <pre class="map-layer map-terrain">{campArt().terrain.join("\n")}</pre>
+          <pre class="map-layer map-paths">{paths()}</pre>
+          <pre class="map-layer map-hearth-fire">{HEARTH_FIRE_FRAMES[fireTick()]}</pre>
+          <pre class="map-layer map-cinder-fire">{CINDER_FIRE_FRAMES[fireTick()]}</pre>
+          <pre class="map-layer map-gates">{gateLayer()}</pre>
+          <pre class="map-layer map-apprentice">{sprite()}</pre>
+        </div>
       </div>
 
       <Show when={dialog() === "hearth"}>
         <div class="camp-dialog camp-roster">
           <p class="camp-roster-head">
             The ancient fire roars over the chapada — it outlasts every run, and
-            teaches a fire what it is ready to learn. <em>Once per camp.</em>
+            grants one rite per camp visit: deeply tend a fire, OR teach it what
+            it is ready to learn. <em>One Hearth action per camp.</em>
           </p>
           <div class="camp-tabpane">
             <p class="title-dex-cap">whose fire? (↑/↓)</p>
@@ -488,14 +611,40 @@ export function CampScene(props: {
               </For>
             </div>
 
-            <p class="title-dex-cap">{hearthName()} — what the ancient fire can teach:</p>
             <Show
-              when={!taughtThisVisit()}
+              when={!hearthSpentThisVisit()}
               fallback={<p class="title-dex-none">the ancient fire has given what it can — return after a leg</p>}
             >
+              {/* Deep tend — the survival choice. The Hearth pours itself over
+                  the whole Circle, fully restoring every living fire. */}
+              <p class="title-dex-cap">the Circle — survive:</p>
+              <div class="camp-fire-list">
+                <button
+                  class="camp-fire-act"
+                  onClick={() => doDeepTend()}
+                >
+                  [T] deep tend the Circle{" "}
+                  <span class="title-dex-dim">· every living fire fully restored, body and breath</span>
+                </button>
+                <button
+                  class="camp-fire-act"
+                  classList={{ "is-spent": (rosterBeat(), props.run.inventory.caches <= 0 || !circleNeedsTend()) }}
+                  disabled={(rosterBeat(), props.run.inventory.caches <= 0)}
+                  onClick={() => doCacheTend()}
+                >
+                  [C] spend cache{" "}
+                  <span class="title-dex-dim">· free deep tend · caches {(rosterBeat(), props.run.inventory.caches)}</span>
+                </button>
+              </div>
+              <Show when={hearthNotice().length > 0}>
+                <p class="title-dex-dim">{hearthNotice()}</p>
+              </Show>
+
+              {/* Teach — the build choice. Gated on readiness + banked XP. */}
+              <p class="title-dex-cap">{hearthName()} — or build:</p>
               <Show
                 when={hearthTeachable().length > 0}
-                fallback={<p class="title-dex-none">— nothing yet; this fire must grow before it can learn more —</p>}
+                fallback={<p class="title-dex-none">— nothing yet to teach; this fire must grow before it can learn more —</p>}
               >
                 <div class="camp-fire-list">
                   <For each={hearthTeachable()}>
@@ -518,7 +667,7 @@ export function CampScene(props: {
               </Show>
             </Show>
           </div>
-          <p class="camp-dialog-hint">↑/↓ fire · number: teach (one per camp) · [Esc] back</p>
+          <p class="camp-dialog-hint">↑/↓ fire · [T] deep tend · [C] spend cache · number: teach (one Hearth action per camp) · [Esc] back</p>
         </div>
       </Show>
       <Show when={dialog() === "cinder"}>
@@ -642,6 +791,10 @@ export function CampScene(props: {
         </div>
       </Show>
 
+      <Show when={inventoryOpen()}>
+        <InventoryDialog run={props.run} onClose={() => setInventoryOpen(false)} />
+      </Show>
+
       <Show when={mapOpen()}>
         <div class="camp-dialog camp-roster">
           <p class="camp-roster-head">THE LONG WALK SOUTH — the branches ahead</p>
@@ -673,11 +826,20 @@ export function CampScene(props: {
         </div>
       </Show>
 
-      <p class="camp-status" classList={{ "is-low": tribeFelt(props.run.campIntegrity).low }}>
-        {tribeFelt(props.run.campIntegrity).word}
-        {tribeFelt(props.run.campIntegrity).low ? " — it can take little more" : ""}
-      </p>
-      <p class="camp-hint">arrows: walk · numbered south gates lead onward · [M] the long walk · the Cinder keeps the tally</p>
+      {/* Bottom UI band (DESIGN.md §5 / Option B) — dedicated UI space below
+          the map. Flavor / tribe status / gate list / hint stack here in
+          normal flow; the map shrinks to fit above via container queries
+          on .camp-stage-wrap. Hidden flavor when stages have none configured. */}
+      <div class="camp-ui">
+        <Show when={stageFlavor(props.run).length > 0}>
+          <p class="camp-flavor">{stageFlavor(props.run)}</p>
+        </Show>
+        <p class="camp-status" classList={{ "is-low": tribeFelt(props.run.campIntegrity).low }}>
+          {tribeFelt(props.run.campIntegrity).word}
+          {tribeFelt(props.run.campIntegrity).low ? " — it can take little more" : ""}
+        </p>
+        <p class="camp-hint">arrows: walk · [1-9] take a south gate · [M] the long walk · the Cinder keeps the tally</p>
+      </div>
     </div>
   );
 }

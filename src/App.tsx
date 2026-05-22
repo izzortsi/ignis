@@ -13,7 +13,7 @@ import { CaveScene } from "./ui/map/CaveScene";
 import { encounterRequest } from "./core/encounter-bus";
 import { TideEncounter } from "./ui/encounter/TideEncounter";
 import { BattleEncounter } from "./ui/encounter/BattleEncounter";
-import { startRun, setStage, arriveAtEquator, tendFires, type RunState } from "./core/run";
+import { startRun, setStage, arriveAtEquator, tendFires, applyLegXp, applyLegDrops, type RunState } from "./core/run";
 import { makeRoute, moveTo, stageOf, type RouteMap, type MapNode } from "./core/routemap";
 
 type Phase = "title" | "intro" | "camp" | "leg" | "ended";
@@ -29,7 +29,13 @@ export function App() {
 
   function beginRun(cinderName: string) {
     seq += 1;
-    const runName = `${cinderName}#${seq}`;
+    // Drop per-run determinism (operator decision): mix fresh entropy into
+    // the internal runName so the same typed Cinder name produces different
+    // runs each playthrough. Route, chapadas, encounters, battles all flow
+    // from the runName, so a fresh suffix here cascades through everything.
+    // The display name (cinderName via setName) stays clean.
+    const fresh = Date.now().toString(36) + "-" + Math.floor(Math.random() * 0x7fffffff).toString(36);
+    const runName = `${cinderName}#${seq}#${fresh}`;
     setName(cinderName);
     setRun(startRun(runName));
     setRoute(makeRoute(runName));
@@ -59,6 +65,16 @@ export function App() {
   function legDone() {
     const r = run()!;
     if (r.outcome === "running") {
+      // Leg-completion XP grant before tending — finishing the leg feels
+      // like progress, not just survival. The current leg node tracks
+      // danger and stage, both scale the grant.
+      const node = leg();
+      if (node !== null) {
+        applyLegXp(r, node.danger ?? 0, node.rank);
+        // B2.2: leg-completion item drops — +1 cache always, restorative
+        // chance scales with danger. Adds shape to the "return to camp" beat.
+        applyLegDrops(r, node.danger ?? 0);
+      }
       tendFires(r);
       setPhase("camp");
     } else {

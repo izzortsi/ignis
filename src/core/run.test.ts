@@ -142,7 +142,7 @@ describe("Run — migration spine", () => {
     expect(r.meta.memorial.length).toBe(0);
   });
 
-  it("camp rest restores living fires' vitality toward full (partial, capped)", () => {
+  it("camp rest restores living fires partially — battle wear stacks across legs (DESIGN.md §8)", () => {
     const r = startRun("rest");
     r.phase = "encounter";
     applyEncounterOutcome(r, { campDamage: 0, capturedName: "Mote" });
@@ -157,10 +157,33 @@ describe("Run — migration spine", () => {
     expect(bondedCinder(r).name).toBe(bonded.name); // survived (not memorialised)
     expect(bondedCinder(r).vitality).toBeGreaterThan(0.3); // recovered (partial)
     expect(bondedCinder(r).vitality).toBeLessThanOrEqual(1);
-    expect(bondedCinder(r).coherenceFrac).toBe(1); // camp FULLY restores coherence
+    // Coherence is now PARTIAL — only the Hearth's deep tend fully heals.
+    expect(bondedCinder(r).coherenceFrac).toBeGreaterThan(0.2);
+    expect(bondedCinder(r).coherenceFrac).toBeLessThan(1);
     expect(brimming.vitality).toBeGreaterThan(0.9);
     expect(brimming.vitality).toBeLessThanOrEqual(1); // clamped
-    expect(brimming.coherenceFrac).toBe(1); // a benched fire is whole again at camp
+    // A benched fire (coherenceFrac=0) becomes usable but still wounded.
+    expect(brimming.coherenceFrac).toBeGreaterThan(0);
+    expect(brimming.coherenceFrac).toBeLessThan(1);
+  });
+
+  it("stage modifiers thread into tendFires: Sierra Madre rest is weaker than Cascade rest", () => {
+    // Same fire, same starting wear — but tended at two different stages.
+    // The northern stage uses the default modifier (1.0); Sierra Madre's
+    // long winter halves what camp restores (DESIGN.md §5).
+    const north = startRun("stage-north");
+    north.stageIndex = 0; // Cascade Foothills — default modifier
+    north.circle[0].coherenceFrac = 0.2;
+    north.circle[0].vitality = 0.2;
+    tendFires(north);
+    const sierra = startRun("stage-sierra");
+    sierra.stageIndex = 4; // Sierra Madre Camps — restGainMul 0.5
+    sierra.circle[0].coherenceFrac = 0.2;
+    sierra.circle[0].vitality = 0.2;
+    tendFires(sierra);
+    expect(sierra.circle[0].coherenceFrac).toBeGreaterThan(0.2);
+    expect(north.circle[0].coherenceFrac).toBeGreaterThan(sierra.circle[0].coherenceFrac);
+    expect(north.circle[0].vitality).toBeGreaterThan(sierra.circle[0].vitality);
   });
 
   it("tendFires alone (App.legDone's call) rests the Circle without advancing the stage", () => {
@@ -172,7 +195,10 @@ describe("Run — migration spine", () => {
     tendFires(r); // exactly what App.legDone does on return to camp
     expect(bondedCinder(r).name).toBe(bonded.name); // survived (not memorialised)
     expect(bondedCinder(r).vitality).toBeGreaterThan(0.25); // recovered (partial)
-    expect(bondedCinder(r).coherenceFrac).toBe(1); // un-benched: full coherence
+    // Coherence recovers too, but only partially — battle wear now stacks
+    // across legs (DESIGN.md §8 revision). The Hearth's deep-tend fully heals.
+    expect(bondedCinder(r).coherenceFrac).toBeGreaterThan(0);
+    expect(bondedCinder(r).coherenceFrac).toBeLessThan(1);
     expect(r.stageIndex).toBe(3); // tendFires must not touch progression
   });
 

@@ -4,6 +4,8 @@ import {
   feedReading,
   expelNoise,
   endPeriod,
+  restPeriod,
+  deepTendFire,
   rememberMoment,
   readProfile,
   isAlive,
@@ -109,5 +111,43 @@ describe("Cinder — the Circle", () => {
     expect(c.level).toBe(lvl0);
     expect(c.xp).toBe(xp0);
     expect(c.vitality).toBeGreaterThan(0); // still fed
+  });
+
+  it("camp rest now PARTIALLY restores coherence — battle wear stacks across legs", () => {
+    const c = kindle("RestCoh", false);
+    c.coherenceFrac = 0.2; // battered in a hard leg
+    c.vitality = 0.3;
+    restPeriod(c);
+    // Both stats recovered, but neither went all the way to 1 — only the
+    // Hearth's deep tend can fully heal a fire in one camp.
+    expect(c.coherenceFrac).toBeGreaterThan(0.2);
+    expect(c.coherenceFrac).toBeLessThan(1);
+    expect(c.coherenceFrac).toBeCloseTo(0.6, 5);
+    expect(c.vitality).toBeGreaterThan(0.3);
+    expect(c.vitality).toBeLessThan(1);
+    // Repeat camps can fully restore — over time the Circle recovers.
+    restPeriod(c);
+    restPeriod(c);
+    expect(c.coherenceFrac).toBe(1);
+    expect(c.vitality).toBe(1);
+  });
+
+  it("deepTendFire fully restores one chosen fire (the Hearth's survival action)", () => {
+    const c = kindle("DeepTend", false);
+    c.vitality = 0.2;
+    c.coherenceFrac = 0.1;
+    const before = c.streak;
+    expect(deepTendFire(c)).toBe(true);
+    expect(c.vitality).toBe(1);
+    expect(c.coherenceFrac).toBe(1);
+    expect(c.streak).toBeGreaterThan(before); // counts as a fed period
+  });
+
+  it("deepTendFire refuses a snuffed fire — only the tribe re-embers", () => {
+    const c = kindle("Snuffed", false);
+    c.vitality = 0;
+    expect(deepTendFire(c)).toBe(false);
+    expect(c.vitality).toBe(0);
+    expect(c.coherenceFrac).toBe(1); // unchanged (default kindle value)
   });
 });

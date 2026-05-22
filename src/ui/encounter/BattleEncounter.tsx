@@ -35,6 +35,8 @@ import {
   barFelt,
   type StatKind,
 } from "../../core/battle-felt";
+import { stageFlavor } from "../../core/stages";
+import { InventoryDialog } from "../inventory/InventoryDialog";
 // Note: away from the Hearth/bonfire a Cinder shows as its mochi ENTITY
 // (petart creature), never a DoomFire flame — that look is the camp's alone.
 
@@ -65,6 +67,7 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
   const [log, setLog] = createSignal<string[]>([]);
   const [resultMsg, setResultMsg] = createSignal("");
   const [tick, setTick] = createSignal(0); // animates the entity sprites
+  const [itemOpen, setItemOpen] = createSignal(false);
 
   function pushLogFrom(len: number): void {
     if (s.log.length <= len) return;
@@ -123,6 +126,17 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
         if (k === "enter") { e.preventDefault(); finishEncounter(); }
         return;
       }
+      if (itemOpen()) {
+        if (k === "escape" || k === "i") { e.preventDefault(); setItemOpen(false); return; }
+        if (k === "1") {
+          e.preventDefault();
+          act({ type: "useItem", item: "restorative" });
+          setItemOpen(false);
+          return;
+        }
+        return;
+      }
+      if (k === "i") { e.preventDefault(); setItemOpen(true); return; }
       if (phase() === "setup") {
         if (k === "escape") { e.preventDefault(); s.result = "walked"; s.done = true; resolveEnd(); return; }
         if (k === "s") { e.preventDefault(); setStaked(!staked()); return; }
@@ -297,6 +311,11 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
               : "a wild fire flares from the brush"
           }
         </p>
+        <Show when={stageFlavor(run).length > 0}>
+          <p class="enc-sub" style={{ "font-style": "italic", opacity: 0.75 }}>
+            {stageFlavor(run)}
+          </p>
+        </Show>
         <p class="enc-tribe" classList={{ "is-low": tribeFelt(run.campIntegrity).low }}>
           {tribeFelt(run.campIntegrity).word}
         </p>
@@ -404,6 +423,17 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
 
         <p class="enc-dim">the fire never speaks in numbers — weigh it yourself</p>
       </div>
+      <Show when={itemOpen()}>
+        <InventoryDialog
+          run={run}
+          usableOnly
+          onClose={() => setItemOpen(false)}
+          onUseRestorative={() => {
+            act({ type: "useItem", item: "restorative" });
+            setItemOpen(false);
+          }}
+        />
+      </Show>
     </div>
   );
 }

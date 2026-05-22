@@ -167,7 +167,11 @@ export class RunScene implements Scene {
     screen.text(px, 3, `Stage ${run.stageIndex + 1}/8`, Palette.text);
     screen.text(px, 4, currentStage(run), Palette.dim);
     bar(screen, px, 6, 22, run.campIntegrity, run.campIntegrity > 0.4 ? Palette.native : Palette.danger, "camp  ");
-    bar(screen, px, 7, 22, run.provisions, Palette.warn, "stores");
+    // B2.1: provisions float was replaced by inventory.caches (counted).
+    // This dead Canvas scene maps the cache count to a 0-1 bar fill so it
+    // compiles; full bar at 6 caches. The scene itself is retired — kept
+    // alive only because tsconfig includes the whole src/ tree.
+    bar(screen, px, 7, 22, Math.min(1, run.inventory.caches / 6), Palette.warn, "stores");
 
     // The bonded Cinder, rendered as its living self.
     const bonded = run.circle[0];

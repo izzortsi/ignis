@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "02188c0f-35d7-4150-8c5a-3e049b8131ab",
+  "recorded_at": "2026-05-21T17:54:17.052Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/CampScene.tsx",
+  "description": "Drop redundant gate buttons; the map markers and 1-9 hotkeys are enough",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "89e5b7bdb2d58e36413e1a157ccae9ce6bd3e0aea12eafa64787dd8e201e242b",
+    "post_hash": "4ae75d5e734bddea8058d8f984676ca2f606a105fb414d35a22675b13942f69d"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/CampScene.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

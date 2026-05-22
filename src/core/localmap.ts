@@ -591,3 +591,34 @@ export function stepToward(
   }
   return [fx, fy];
 }
+
+// Spawn a fresh duelist somewhere on the map, away from the player. Returns
+// the new site (and pushes it onto m.sites), or null if no valid spot exists
+// (a cramped cave, or the player is on top of everything). The dread beat:
+// "someone has stepped onto the road from elsewhere." The existing pursuit
+// machinery (canSeeFrom + stepToward) picks them up once their FOV reaches
+// the player — they don't ambush, they hunt.
+//
+// Constraints: must be a plain "floor" tile (no water, grass, rubble, sand —
+// duelists don't pop out of the sea); at least MIN_DIST cells away from
+// (awayFromX, awayFromY) so the spawn isn't visible at common light radii;
+// not on entry/exit; not on an existing site. Tries up to TRIES random cells
+// before giving up.
+const SPAWN_MIN_DIST = 6;
+const SPAWN_TRIES = 30;
+export function spawnDuelSite(
+  m: LocalMap, rng: Rng, awayFromX: number, awayFromY: number,
+): EncounterSite | null {
+  for (let i = 0; i < SPAWN_TRIES; i++) {
+    const x = 1 + rng.nextInt(m.w - 2);
+    const y = 1 + rng.nextInt(m.h - 2);
+    if (m.tiles[y * m.w + x] !== "floor") continue;
+    if (Math.max(Math.abs(x - awayFromX), Math.abs(y - awayFromY)) < SPAWN_MIN_DIST) continue;
+    if (x === m.exitX && y === m.exitY) continue;
+    if (m.sites.some((s) => s.x === x && s.y === y)) continue;
+    const site: EncounterSite = { x, y, kind: "duel", resolved: false };
+    m.sites.push(site);
+    return site;
+  }
+  return null;
+}

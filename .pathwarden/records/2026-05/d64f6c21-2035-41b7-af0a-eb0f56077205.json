@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "d64f6c21-2035-41b7-af0a-eb0f56077205",
+  "recorded_at": "2026-05-21T17:11:09.079Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/battle.ts",
+  "description": "Import stageFoeLevelBonus in battle.ts; Apply stage foe-level bonus in makeBattle",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "fcd46ce2583bca738c92037001744f7d3120960daf9593cdc3c46e28ec9967fd",
+    "post_hash": "cbab1300d18964511e01c6806d23e7e37f11b33ff943f5b3ff955d259c186390"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/battle.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "a55f8574-e182-43f8-9292-f2970dc78f8b",
+  "recorded_at": "2026-05-22T04:36:59.423Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/inventory/InventoryDialog.tsx",
+  "description": "Create shared inventory dialog component",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "create"
+  },
+  "content": {
+    "pre_hash": null,
+    "post_hash": "708cf9db1a1c5c102295834d354b2a3e0fc9065956f08d7d025d83cbfa370c20"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/inventory/InventoryDialog.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": false,
+    "observations": [
+      "operation_kind_defaulted: emitter did not specify operation_kind, defaulted to write"
+    ]
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

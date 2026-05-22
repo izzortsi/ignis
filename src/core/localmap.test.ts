@@ -9,10 +9,12 @@ import {
   isOpaque,
   canSeeFrom,
   stepToward,
+  spawnDuelSite,
   type LocalMap,
   type Tile,
 } from "./localmap";
 import { makeRoute } from "./routemap";
+import { Rng, seedFrom } from "../rng";
 
 // A real interior leg node (has rank + danger).
 const legNode = (name: string) => {
@@ -259,5 +261,104 @@ describe("pursuit (a duelist that hunts you)", () => {
       hy = n[1];
     }
     expect(Math.max(Math.abs(hx - tx), Math.abs(hy - ty))).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("spawnDuelSite (mid-leg duelist appearances)", () => {
+  // A 30x30 open room: cliffs around the border, floor everywhere else.
+  // Plenty of valid spawn cells far from the player.
+  function bigEmpty(): LocalMap {
+    const w = 30;
+    const h = 30;
+    const tiles: Tile[] = new Array(w * h);
+    for (let i = 0; i < tiles.length; i++) {
+      const x = i % w;
+      const y = Math.floor(i / w);
+      tiles[i] = (x === 0 || y === 0 || x === w - 1 || y === h - 1) ? "cliff" : "floor";
+    }
+    tiles[(h - 2) * w + (w - 2)] = "exit";
+    return {
+      w, h, tiles,
+      px: 1, py: 1,
+      exitX: w - 2, exitY: h - 2,
+      sites: [],
+    };
+  }
+
+  it("places a duel on a floor cell, away from the given point, unresolved", () => {
+    const m = bigEmpty();
+    const rng = new Rng(seedFrom("spawn-1"));
+    const site = spawnDuelSite(m, rng, m.px, m.py);
+    expect(site).not.toBeNull();
+    expect(site!.kind).toBe("duel");
+    expect(site!.resolved).toBe(false);
+    expect(m.tiles[site!.y * m.w + site!.x]).toBe("floor");
+    // At least SPAWN_MIN_DIST (6) Chebyshev away — off-screen at common
+    // light radii so the spawn isn't visible the moment it happens.
+    expect(Math.max(Math.abs(site!.x - m.px), Math.abs(site!.y - m.py))).toBeGreaterThanOrEqual(6);
+    expect(m.sites).toContain(site);
+  });
+
+  it("is deterministic for a given seed + map state", () => {
+    const a = bigEmpty();
+    const b = bigEmpty();
+    const ra = new Rng(seedFrom("spawn-det"));
+    const rb = new Rng(seedFrom("spawn-det"));
+    const sa = spawnDuelSite(a, ra, a.px, a.py);
+    const sb = spawnDuelSite(b, rb, b.px, b.py);
+    expect(sa).not.toBeNull();
+    expect([sa!.x, sa!.y]).toEqual([sb!.x, sb!.y]);
+  });
+
+  it("never places two duels on the same cell", () => {
+    const m = bigEmpty();
+    const rng = new Rng(seedFrom("spawn-overlap"));
+    for (let i = 0; i < 8; i++) spawnDuelSite(m, rng, m.px, m.py);
+    const keys = new Set(m.sites.map((s) => s.y * m.w + s.x));
+    expect(keys.size).toBe(m.sites.length);
+  });
+
+  it("refuses to spawn on a non-floor tile (no D in the water / grass / rubble)", () => {
+    const m = bigEmpty();
+    // Carpet the interior with water — only floor cell is the player's.
+    for (let y = 1; y < m.h - 1; y++) {
+      for (let x = 1; x < m.w - 1; x++) {
+        if (x === m.px && y === m.py) continue;
+        if (x === m.exitX && y === m.exitY) continue;
+        m.tiles[y * m.w + x] = "water";
+      }
+    }
+    const rng = new Rng(seedFrom("spawn-wet"));
+    expect(spawnDuelSite(m, rng, m.px, m.py)).toBeNull();
+  });
+
+  it("refuses to spawn on the exit cell or an existing site", () => {
+    const m = bigEmpty();
+    // Drop a pre-placed site at (20, 20).
+    m.sites.push({ x: 20, y: 20, kind: "forage", resolved: false });
+    const rng = new Rng(seedFrom("spawn-exit"));
+    // Spawn many; none should land on the exit or the pre-placed forage.
+    for (let i = 0; i < 12; i++) spawnDuelSite(m, rng, m.px, m.py);
+    for (const s of m.sites) {
+      if (s.kind === "forage") continue; // the pre-placed one
+      expect(s.x === m.exitX && s.y === m.exitY).toBe(false);
+      expect(s.x === 20 && s.y === 20).toBe(false);
+    }
+  });
+
+  it("returns null when no spot is far enough (a cramped 5x5 room)", () => {
+    const tiles: Tile[] = new Array(25);
+    for (let i = 0; i < 25; i++) {
+      const x = i % 5, y = Math.floor(i / 5);
+      tiles[i] = (x === 0 || y === 0 || x === 4 || y === 4) ? "cliff" : "floor";
+    }
+    const m: LocalMap = {
+      w: 5, h: 5, tiles,
+      px: 2, py: 2,
+      exitX: 4, exitY: 4,
+      sites: [],
+    };
+    const rng = new Rng(seedFrom("spawn-cramped"));
+    expect(spawnDuelSite(m, rng, m.px, m.py)).toBeNull();
   });
 });

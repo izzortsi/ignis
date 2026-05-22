@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "09e1ef07-0cd3-48f5-8b1e-f8da59668e66",
+  "recorded_at": "2026-05-21T05:41:29.199Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/localmap.ts",
+  "description": "Add spawnDuelSite helper at end of localmap.ts",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "e9b2f3419ab7c71a1d88bfb67cb6635ff181857077ba995c8cc36a6d429207c7",
+    "post_hash": "6da609946b850e4993695688fbc10ebfbe93eea2c93cf162bd93306cc8295e14"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/localmap.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

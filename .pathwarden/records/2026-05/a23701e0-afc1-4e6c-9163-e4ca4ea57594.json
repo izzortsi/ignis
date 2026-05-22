@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "a23701e0-afc1-4e6c-9163-e4ca4ea57594",
+  "recorded_at": "2026-05-22T04:37:26.756Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/battle.ts",
+  "description": "Import useRestorative for battle item action; Add useItem restorative action to battle Action union; Add restorative vitality gain constant near battle regen; Handle restorative item action in battle step",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "8c97c41e05c3e0279d6dd3b5a7b62186f3f2526653f79bafcdd2ed17592445fa",
+    "post_hash": "dd93edc187eb6695cec90938a87e17e5d546440b8d8f85a9a2168daef734d007"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/battle.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

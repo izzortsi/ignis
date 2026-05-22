@@ -340,6 +340,35 @@ describe("type wheel + experience (DESIGN.skills §2, §9)", () => {
     expect(snap(s2.you[0].cinder)).toEqual(before);
   });
 
+  it("duels pay materially more XP than wild wins — they offer no capture/absorb consolation", () => {
+    // A wild win gives XP plus a chance at an absorbed technique AND the
+    // option to capture the fire instead; a duel pays only XP. Peer/rival
+    // bonuses are tuned to compensate. Sample on aggregate (foe identity
+    // varies per seed): the duel average should beat the wild average by a
+    // meaningful margin, not be ambiguously equal.
+    function xpFromWin(name: string, source: "grass" | "duel"): number {
+      const r = startRun(name);
+      r.stageIndex = 7; // deep south so foes are high-level — bonuses hit hardest
+      const s = startBattle(r, legNode(name), 0, source);
+      const before = r.circle[0].level * 100 + r.circle[0].xp;
+      s.result = "win";
+      s.done = true;
+      finalizeBattle(s, r, false);
+      return r.circle[0].level * 100 + r.circle[0].xp - before;
+    }
+    let totalWild = 0;
+    let totalDuel = 0;
+    const N = 30;
+    for (let i = 0; i < N; i++) {
+      totalWild += xpFromWin("wxp-" + i, "grass");
+      totalDuel += xpFromWin("dxp-" + i, "duel");
+    }
+    expect(totalDuel).toBeGreaterThan(totalWild);
+    // Duels should pay at least 20% more on average — that's the design intent
+    // ("materially more"), and the floor catches accidental nerfs.
+    expect(totalDuel / totalWild).toBeGreaterThan(1.2);
+  });
+
   it("a capture also pays the fielded fire, and the foe joins with inherited state", () => {
     const r = startRun("capxp");
     const s = startBattle(r, legNode("capxp"));

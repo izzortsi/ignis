@@ -37,6 +37,8 @@ import {
   type EncounterOutcome,
   type CapturedSnapshot,
 } from "./run";
+import { stageFoeLevelBonus } from "./stages";
+import { useRestorative } from "./inventory";
 import type { MapNode } from "./routemap";
 
 // --- shared with the Reading calibration (lifted from duel.ts) --------------
@@ -165,7 +167,8 @@ export type Action =
   | { type: "move"; moveId: string }
   | { type: "switch"; idx: number }
   | { type: "catch" }
-  | { type: "flee" };
+  | { type: "flee" }
+  | { type: "useItem"; item: "restorative" };
 
 // --- the move pool ---------------------------------------------------------
 
@@ -376,9 +379,17 @@ export function makeBattle(run: RunState, node: MapNode, nonce = 0, source: Batt
   }
   // Name includes the nonce so a re-encountered name is still a distinct fire.
   const foe = kindle(foeName + "-foe-" + node.id + "-" + nonce, false);
-  // Scale the foe by latitude; wilds run a touch weak (catchable), rivals hot.
-  const tilt = isWild ? -1 : kind === "rival" ? 2 : 0;
-  foe.level = clampInt(2 + Math.round(lat * 8) + tilt, 1, 12);
+  // Scale the foe by latitude; wilds run a touch weak (catchable). Peer/rival
+  // tilt RAMPS with latitude so the first leg isn't a L4 rival vs a L1 player
+  // — at Cascade (lat=0) peers/rivals come in flat, at Andes (lat=1) they
+  // gain their full tilt. Stage modifiers (DESIGN.md §5) add a per-stage
+  // bonus on top — Yucatan/Isthmus +1, the Equatorial Andes +2.
+  const tilt = isWild
+    ? -1
+    : kind === "rival" ? Math.round(lat * 2)
+    : kind === "peer"  ? Math.round(lat * 1)
+    : 0;
+  foe.level = clampInt(2 + Math.round(lat * 8) + tilt + stageFoeLevelBonus(run), 1, 12);
   foe.vitality = clamp(0.7 + (kind === "rival" ? 0.15 : isWild ? -0.1 : 0) + lat * 0.1, 0.25, 1);
   return {
     kind,
@@ -442,7 +453,13 @@ const SELF_DEBUFFS: Condition[] = ["rattled", "dazzled", "spore-fouled", "jammed
 // recovery/utility can't be chained. A move may NEVER drain a fire to death —
 // only a staked loss / camp neglect reaches 0 (see isAlive).
 const DEATH_FLOOR = 0.04;
-const BATTLE_REGEN = 0.01; // a faint breath back each round (PROVISIONAL — slow on purpose)
+// Vitality (the mana / breath budget) does NOT recover inside a battle.
+// Spending breath on a skill binds the fire — only camp rest restores it.
+// Heals/recovers must be earned by a costed action (Error-Correct, Negentropic
+// Siphon), not by passive regen. Operator decision after observing the regen
+// was effectively cancelling skill costs.
+const BATTLE_REGEN = 0;
+const RESTORATIVE_GAIN = 0.5;
 // Beating a wild: capture keeps it whole (less essence → less xp); winning
 // absorbs it (full xp + a chance to take one of its techniques). PROVISIONAL.
 const CAPTURE_XP_MUL = 0.5;
@@ -665,6 +682,16 @@ export function step(s: BattleState, run: RunState, action: Action): void {
     return;
   }
 
+  if (action.type === "useItem") {
+    if (action.item === "restorative" && useRestorative(run.inventory)) {
+      me.cinder.vitality = clamp(me.cinder.vitality + RESTORATIVE_GAIN, 0, 1);
+      s.log.push({ actor: "you", text: "restorative" });
+      foeTurn(s, run, rng); // item use costs the turn
+      finishRound(s);
+    }
+    return;
+  }
+
   // action.type === "move"
   const picked = me.loadout.find((m) => m.id === (action as { moveId: string }).moveId) ?? me.loadout[0];
   const move = affordableMove(me, picked); // no breath for it → a free fallback
@@ -733,9 +760,16 @@ export function finalizeBattle(s: BattleState, run: RunState, staked: boolean): 
   // gainXp caps at LEVEL_MAX and ignores dead fires. Ephemeral by design.
   // Winning absorbs the wild's essence → MORE xp than capturing (which keeps
   // it whole) — capture pays only CAPTURE_XP_MUL of the base.
+  //
+  // Duel bonuses (peer/rival) are weighted to compensate for the wild's two
+  // run-power consolation prizes the duel can't offer: no capture (the foe is
+  // a person, you can't kindle their fire), and no essence-absorb chance (the
+  // technique-windfall is wild-only). XP becomes the only currency duels pay
+  // in, so peer/rival values are higher than a comparable wild win to keep
+  // duels worth picking. PROVISIONAL.
   if (s.result === "win" || s.result === "captured") {
     const k = s.setup.kind;
-    const base = 4 + s.setup.foe.level * 2 + (k === "rival" ? 6 : k === "peer" ? 3 : 0);
+    const base = 4 + s.setup.foe.level * 2 + (k === "rival" ? 14 : k === "peer" ? 8 : 0);
     const xp = s.result === "captured" ? Math.round(base * CAPTURE_XP_MUL) : base;
     const lead = s.you[s.activeYou];
     if (lead) gainXp(lead.cinder, xp);

@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "dc796b1f-83db-4fea-9d49-8a9aa32a6809",
+  "recorded_at": "2026-05-22T01:32:34.403Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/CampScene.tsx",
+  "description": "Add buildPaths and PathGate to CampScene imports; Add paths memo to CampScene; Add paths render layer between scree and terrain",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "ff4585a2c21bfc480de39a189c356acebbcd0493fe6617dfc0f8f012f27a9518",
+    "post_hash": "b2be9fbc2992fd8706b5979e64fb747afcb85064ac18ec7f3a1c7f08000f8457"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/CampScene.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

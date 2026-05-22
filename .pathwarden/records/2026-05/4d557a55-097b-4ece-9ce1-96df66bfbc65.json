@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "4d557a55-097b-4ece-9ce1-96df66bfbc65",
+  "recorded_at": "2026-05-22T03:39:03.862Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/ruin.ts",
+  "description": "Add xp field to RuinRoll and populate per-band",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "9305b73047e661b447ba097136a46c413c22af1630de0719d067137e9f0b6187",
+    "post_hash": "6568f340a2628479e162a1a729dc32cd82ce4ece324697372694f27ac5f42980"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/ruin.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

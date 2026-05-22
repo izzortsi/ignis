@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "6dada8cf-c53c-4dee-b0df-f6c0aee9f748",
+  "recorded_at": "2026-05-21T23:21:40.802Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/map-art.test.ts",
+  "description": "Remove buildEarthRing from test imports — rollback; Remove buildEarthRing describe block from tests — rollback",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "6635fb72ee277716daf47793ddcb997915850da6f83482c66f09ed8f0cd8fd4f",
+    "post_hash": "c8ce2d00e8e1f19734436c5b6b966021b2e7ac5cbaa8fd0a1c3122a0852b9636"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/map-art.test.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

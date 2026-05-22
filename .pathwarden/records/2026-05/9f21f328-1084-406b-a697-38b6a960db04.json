@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "9f21f328-1084-406b-a697-38b6a960db04",
+  "recorded_at": "2026-05-22T01:16:28.794Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/map-art.test.ts",
+  "description": "Drop buildStretches tests and StretchGate import; Remove buildStretches describe block from tests",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "9961a7635f1aa26cf4b8bf3b6cc3e17a6f40792657711e781936f36116d441a3",
+    "post_hash": "d087d0319f3a78618e98eb497690bc724b1e6ff5056ba7a6dbb964ebf1b421af"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/map-art.test.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

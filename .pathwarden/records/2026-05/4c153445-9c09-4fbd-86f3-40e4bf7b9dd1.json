@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "4c153445-9c09-4fbd-86f3-40e4bf7b9dd1",
+  "recorded_at": "2026-05-22T01:16:28.319Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/map-art.ts",
+  "description": "Remove buildStretches function and StretchGate interface",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "ade0eddc3f9fc6833011d329a447bcf8b8205f68735b73c9d68b8706285466b6",
+    "post_hash": "ceba0ee212a9070b23b0461b22dee65ffa840ef925c6bb323e1c048403365e95"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/map-art.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

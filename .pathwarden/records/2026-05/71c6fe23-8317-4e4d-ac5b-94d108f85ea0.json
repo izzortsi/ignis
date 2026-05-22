@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "71c6fe23-8317-4e4d-ac5b-94d108f85ea0",
+  "recorded_at": "2026-05-21T23:21:21.091Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/map-art.ts",
+  "description": "Remove buildEarthRing function — rollback",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "87986486ee2504fc7b05ae4528adf227411c918374f5b23ee724c529a7ada412",
+    "post_hash": "100c4a0e1aa3f0108ea53c793d5302a573019c1a0b503ec5ab259dbe7d369e1c"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/map-art.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

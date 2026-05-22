@@ -9,17 +9,30 @@ import { bandMeaning, sharpness, spectralFit } from "../../core/reading";
 import { bondedCinder, applyEncounterOutcome, currentStage, stageConditions, type RunState } from "../../core/run";
 import { readProfile, cinderStage, xpProgress, isBurnBright } from "../../core/cinder";
 import { tribeFelt } from "../../core/battle-felt";
+import { stageFlavor } from "../../core/stages";
 import { makeEncounter, current, readCurrent, decide, tideOutcome, type TideEncounter as Tide } from "../../core/tide";
 import { speciesByName } from "../../core/bestiary";
 import { critterSprite } from "../../core/critterart";
 import { finishEncounter } from "../../core/encounter-bus";
 import { DoomFire } from "../DoomFire";
+import { InventoryDialog } from "../inventory/InventoryDialog";
+import { useRestorative } from "../../core/inventory";
 
 export function TideEncounter(props: { run: RunState }) {
   const run = props.run;
   const tide: Tide = makeEncounter(run);
   const [, bump] = createSignal(0, { equals: false }); // force re-render on action
   const [bands, setBands] = createSignal<string[]>([]);
+  const [itemOpen, setItemOpen] = createSignal(false);
+
+  function useRestorativeItem(): void {
+    if (useRestorative(run.inventory)) {
+      const fire = bondedCinder(run);
+      fire.vitality = Math.min(1, fire.vitality + 0.5);
+      bump(0);
+    }
+    setItemOpen(false);
+  }
 
   function finishIfDone(): boolean {
     if (tide.finished) {
@@ -35,6 +48,12 @@ export function TideEncounter(props: { run: RunState }) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.toLowerCase();
       if (tide.finished) return;
+      if (itemOpen()) {
+        if (k === "escape" || k === "i") { e.preventDefault(); setItemOpen(false); return; }
+        if (k === "1") { e.preventDefault(); useRestorativeItem(); return; }
+        return;
+      }
+      if (k === "i") { e.preventDefault(); setItemOpen(true); return; }
       const ent = current(tide);
       if (ent === undefined) {
         tide.finished = true;
@@ -85,6 +104,11 @@ export function TideEncounter(props: { run: RunState }) {
       <div class="enc-stage">
         <p class="enc-title">AN ENCOUNTER</p>
         <p class="enc-sub">{currentStage(run)} — something crosses your path</p>
+        <Show when={stageFlavor(run).length > 0}>
+          <p class="enc-sub" style={{ "font-style": "italic", opacity: 0.75 }}>
+            {stageFlavor(run)}
+          </p>
+        </Show>
 
         <div class="enc-bar">
           <span classList={{ "is-low": tribeFelt(integrity()).low }}>{tribeFelt(integrity()).word}</span>
@@ -153,6 +177,14 @@ export function TideEncounter(props: { run: RunState }) {
         <p class="enc-keys">[R] read again (joint) &nbsp; [E] let pass &nbsp; [B] burn &nbsp; [Q] quarantine</p>
         <p class="enc-dim">the fire never speaks in numbers — weigh it yourself</p>
       </div>
+      <Show when={itemOpen()}>
+        <InventoryDialog
+          run={run}
+          usableOnly
+          onClose={() => setItemOpen(false)}
+          onUseRestorative={useRestorativeItem}
+        />
+      </Show>
     </div>
   );
 }

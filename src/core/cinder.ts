@@ -25,6 +25,7 @@ const PASSIVE_DECAY = 0.02; // even a tended period costs a little
 const NEGLECT_DECAY = 0.2; // a period with zero Readings
 const NOISE_COST = 0.065; // a contradicted / wrong call
 const REST_GAIN = 0.4; // a camp rest restores this much vitality (partial)
+const COH_REST_GAIN = 0.4; // a camp rest restores this much coherence (partial — wear stacks across legs)
 const BURN_BRIGHT_STREAK = 3; // fed periods in a row to reach the high state
 const BURN_BRIGHT_BUMP = 0.16; // acuity boost while burn-bright
 
@@ -145,18 +146,32 @@ export function endPeriod(c: Cinder): void {
 }
 
 // A camp rest (the hub recovery beat — DESIGN.md §4 loop). Replaces the
-// neglect/decay period at camp: a living fire RECOVERS vitality toward full
-// (partial — REST_GAIN, not a full heal of the mana budget, so over-extending
-// still wears the Circle down) and builds its streak. Battle wear is healed
-// FULLY here (coherenceFrac → 1): lasting cost is only within a camp-to-camp
-// stretch (DESIGN.md §8). A snuffed fire (vitality 0, e.g. a staked loss) is
-// NOT revived — the caller memorialises / drops it.
-export function restPeriod(c: Cinder): void {
+// neglect/decay period at camp: a living fire RECOVERS vitality and coherence
+// (BOTH partial — REST_GAIN / COH_REST_GAIN). Battle wear now stacks across
+// legs as well as within them, so the Hearth's deepTendFire (a full restore
+// of one chosen fire) becomes a real survival-vs-build choice against
+// teaching. A snuffed fire (vitality 0, e.g. a staked loss) is NOT revived
+// — the caller memorialises / drops it.
+export function restPeriod(c: Cinder, mul = 1): void {
   if (!isAlive(c)) return;
   c.streak += 1;
-  c.vitality = clamp01(c.vitality + REST_GAIN);
-  c.coherenceFrac = 1; // camp fully restores battle coherence
+  c.vitality = clamp01(c.vitality + REST_GAIN * mul);
+  c.coherenceFrac = clamp01(c.coherenceFrac + COH_REST_GAIN * mul);
   c._fedThisPeriod = false;
+}
+
+// Deep tend — the Hearth performs a full rite over one chosen fire, restoring
+// vitality and coherence to brim. The Hearth has ONE action per camp visit
+// (mutually exclusive with teaching a skill), so this is a survival choice
+// against a build choice. Returns false on a snuffed fire — revival is not
+// the Hearth's gift; it is the tribe's, via re-ember in tendFires.
+export function deepTendFire(c: Cinder): boolean {
+  if (!isAlive(c)) return false;
+  c.vitality = 1;
+  c.coherenceFrac = 1;
+  c.streak += 1;
+  c._fedThisPeriod = false;
+  return true;
 }
 
 // A shared moment. Only the bonded fire remembers and deepens; circle-fires

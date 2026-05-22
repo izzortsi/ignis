@@ -17,9 +17,18 @@ import {
   restPeriod,
   isAlive,
   rememberMoment,
+  gainXp,
   type Cinder,
 } from "./cinder";
 import type { ReadingConditions, SampleClass } from "./reading";
+import { stageEncounterMul, stageRestGainMul } from "./stages";
+import {
+  emptyInventory,
+  addCache,
+  addRestorative,
+  provisionsDeltaToCaches,
+  type Inventory,
+} from "./inventory";
 
 // Bible §7 migration spine, north (low difficulty) -> equator (high).
 export const STAGES: string[] = [
@@ -61,6 +70,7 @@ export interface RunMeta {
   memorial: MemorialEntry[];
   caught: CaughtEntry[]; // wild fires won in duels — kept across runs
   memories: string[]; // recovered flashback ids — the memorial gallery
+  relics: string[]; // pre-collapse lore items — persistent across runs
 }
 
 // A captured fire's inheritance from its battle (DESIGN.md §7 — the wild's
@@ -93,19 +103,20 @@ export interface RunState {
   outcome: RunOutcome;
   circle: Cinder[]; // circle[0] is always the bonded Cinder
   campIntegrity: number; // 0 dead .. 1 whole
-  provisions: number; // 0 starving .. 1 stocked
+  inventory: Inventory; // caches + restoratives (was: provisions float)
   meta: RunMeta;
 }
 
 const META_KEY = "meta";
 
 export function loadMeta(): RunMeta {
-  const m = load<RunMeta>(META_KEY, { dex: [], memorial: [], caught: [], memories: [] });
+  const m = load<RunMeta>(META_KEY, { dex: [], memorial: [], caught: [], memories: [], relics: [] });
   // Tolerate older saves that predate a field.
   if (!Array.isArray(m.dex)) m.dex = [];
   if (!Array.isArray(m.memorial)) m.memorial = [];
   if (!Array.isArray(m.caught)) m.caught = [];
   if (!Array.isArray(m.memories)) m.memories = [];
+  if (!Array.isArray(m.relics)) m.relics = [];
   return m;
 }
 
@@ -186,7 +197,7 @@ export function startRun(runName: string): RunState {
     outcome: "running",
     circle: [bonded],
     campIntegrity: 1,
-    provisions: 1,
+    inventory: emptyInventory(),
     meta: loadMeta(),
   };
 }
@@ -231,7 +242,7 @@ export function stageConditions(run: RunState, sample: SampleClass): ReadingCond
 export function advanceTravel(run: RunState): boolean {
   if (run.phase !== "travel") return false;
   run.progress += 1;
-  const encChance = ENCOUNTER_BASE + 0.4 * latitudeFactor(run);
+  const encChance = (ENCOUNTER_BASE + 0.4 * latitudeFactor(run)) * stageEncounterMul(run);
   if (run._rng.chance(encChance)) {
     run.phase = "encounter";
     return true;
@@ -286,9 +297,10 @@ export function applyEncounterOutcome(run: RunState, out: EncounterOutcome): voi
 // — the run continues (DESIGN.md §13 item 5, bible §9). Used by both the linear
 // tendCamp and the route-map camp nodes.
 export function tendFires(run: RunState): void {
+  const restMul = stageRestGainMul(run); // Sierra Madre halves rest; Sonoran dampens it.
   for (let i = run.circle.length - 1; i >= 0; i--) {
     const fire = run.circle[i];
-    restPeriod(fire); // camp = recovery: living fires regain vitality
+    restPeriod(fire, restMul); // camp = recovery: living fires regain vitality
     if (!isAlive(fire)) {
       if (fire.bonded) {
         run.meta.memorial.push({ name: fire.name, stage: currentStage(run), bond: fire.bond });
@@ -297,6 +309,35 @@ export function tendFires(run: RunState): void {
         run.circle.splice(i, 1);
       }
     }
+  }
+}
+
+// Leg-completion XP grant. Finishing a leg means surviving the dungeon and
+// returning to camp — every alive fire in the Circle earns XP scaled by the
+// leg's danger and the stage's latitude. The bonded fire gets the full grant;
+// the Circle gets a quarter trickle (same pattern as battle XP). Easy legs
+// pay little; grim southern legs pay meaningfully. Operator decision:
+// finishing a leg should always feel like progress, not just survival.
+export function applyLegXp(run: RunState, danger: number, stageIndex: number): void {
+  const lat = Math.max(0, Math.min(7, stageIndex)) / 7;
+  const lead = Math.round(4 + danger * 8 + lat * 4); // 4..16 range
+  const trickle = Math.round(lead * 0.25);
+  for (let i = 0; i < run.circle.length; i++) {
+    const fire = run.circle[i];
+    if (!isAlive(fire)) continue;
+    gainXp(fire, i === 0 ? lead : trickle);
+  }
+}
+
+// B2.2: Leg-completion item drops. Finishing a leg always grants +1 cache
+// (the tribe restocks from what was foraged), and a danger-scaled chance of
+// a restorative (~30% at low danger, up to ~60% at grim danger). Non-
+// deterministic — operator dropped all 4 determinism axes.
+export function applyLegDrops(run: RunState, danger: number): void {
+  addCache(run.inventory, 1);
+  const restorativeChance = 0.3 + Math.max(0, Math.min(1, danger)) * 0.3;
+  if (Math.random() < restorativeChance) {
+    addRestorative(run.inventory, 1);
   }
 }
 
@@ -340,7 +381,14 @@ export interface NodeSpoils {
 
 export function applySpoils(run: RunState, s: NodeSpoils): void {
   if (s.campDamage !== undefined) run.campIntegrity = clamp01(run.campIntegrity - s.campDamage);
-  if (s.provisions !== undefined) run.provisions = clamp01(run.provisions + s.provisions);
+  // B2.1 bridge: callers still pass `provisions: 0.18` for caches and
+  // `provisions: -0.05` for H-point costs. Translate the signed float into
+  // a cache count delta. B2.2 will refactor NodeSpoils to expose caches
+  // directly and remove this translation layer.
+  if (s.provisions !== undefined) {
+    const d = provisionsDeltaToCaches(s.provisions);
+    if (d !== 0) addCache(run.inventory, d);
+  }
   if (s.capturedName !== undefined) {
     run.circle.push(kindle(s.capturedName, false));
     recordCaught(run, s.capturedName);

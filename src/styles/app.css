@@ -63,11 +63,13 @@ html, body {
 .map-stage {
   position: relative;
   font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
-  /* Same fit-to-viewport formula as the intro stage. */
+  /* Fit-to-container via container queries: the map auto-shrinks to whatever
+     space camp-stage-wrap has left after the UI band below it carves its
+     own height (DESIGN.md §5 / Option B). cqw/cqh reference the container. */
   font-size: min(
     0.85rem,
-    calc(98vw / var(--cols) / 0.6),
-    calc(85vh / var(--rows) / 1.05)
+    calc(98cqw / var(--cols) / 0.6),
+    calc(98cqh / var(--rows) / 1.05)
   );
   line-height: 1.05em;
   width: calc(1ch * var(--cols));
@@ -130,6 +132,14 @@ html, body {
      so it reads as "ground falling away" rather than more plateau. */
   color: rgba(95, 85, 75, 0.75);
 }
+.map-paths {
+  /* Path corridors extending south from each gate (DESIGN.md §5 / camp-
+     reflects-stage) — biome-textured hints of the road to each destination.
+     Slightly brighter than scree so they read as traveled road rather than
+     wild ground. */
+  color: rgba(160, 140, 110, 0.65);
+}
+
 
 .map-terrain {
   color: rgba(170, 160, 130, 0.9);
@@ -2022,8 +2032,8 @@ html, body {
 html[data-view-mode="desktop"] .map-stage {
   font-size: min(
     1.5rem,
-    calc(96vw / var(--cols) / 0.6),
-    calc(85vh / var(--rows) / 1.05)
+    calc(98cqw / var(--cols) / 0.6),
+    calc(98cqh / var(--rows) / 1.05)
   );
 }
 
@@ -2180,6 +2190,12 @@ html[data-view-mode="desktop"] .settings-panel {
 
 /* Camp wrapper — full viewport, the .map-stage centred both axes (NOT the
    vendored .camp-map flex-row, which laid the hint out beside the map). */
+/* Camp scene layout (DESIGN.md §5 / Option B — dedicated UI band):
+   .camp-root stacks vertically; .camp-stage-wrap fills the remaining space
+   above and centers the map; .camp-ui is the bottom band that holds
+   flavor / status / gates / hint in normal flow. The map's font-size uses
+   container queries on .camp-stage-wrap so it auto-shrinks to fit whatever
+   space the band leaves — no rem-subtraction needed. */
 .camp-root {
   position: fixed;
   inset: 0;
@@ -2187,36 +2203,54 @@ html[data-view-mode="desktop"] .settings-panel {
   overflow: hidden;
   background: #050304;
   display: flex;
+  flex-direction: column;
+}
+.camp-stage-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  container-type: size;
+}
+.camp-ui {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1rem 1rem;
+  background: linear-gradient(to bottom,
+    rgba(5, 3, 4, 0) 0%,
+    rgba(5, 3, 4, 0.78) 30%,
+    rgba(5, 3, 4, 0.92) 100%);
 }
 .camp-hint {
-  position: fixed;
-  left: 50%;
-  bottom: 2.2vh;
-  transform: translateX(-50%);
   margin: 0;
   color: #7a8090;
   font-family: ui-monospace, "DejaVu Sans Mono", "Courier New", monospace;
   text-align: center;
   pointer-events: none;
-  z-index: 10;
 }
-/* Felt tribe/camp-integrity status — the run's true life, surfaced (no
-   numbers) so the "tribe-wiped" end is legible (DESIGN.md §8). */
 .camp-status {
-  position: fixed;
-  left: 50%;
-  bottom: 5vh;
-  transform: translateX(-50%);
   margin: 0;
   color: #7a8090;
   font-family: ui-monospace, "DejaVu Sans Mono", "Courier New", monospace;
   text-align: center;
   pointer-events: none;
-  z-index: 10;
 }
 .camp-status.is-low { color: var(--danger-strong); font-weight: bold; }
+.camp-flavor {
+  margin: 0;
+  max-width: min(80vw, 60rem);
+  color: var(--fg-dim);
+  font-family: ui-monospace, "DejaVu Sans Mono", "Courier New", monospace;
+  font-style: italic;
+  font-size: 0.85em;
+  text-align: center;
+  pointer-events: none;
+}
 .enc-tribe { color: #7a8090; margin: 0; font-size: 0.9em; }
 .enc-tribe.is-low { color: var(--danger-strong); font-weight: bold; }
 
@@ -2364,40 +2398,12 @@ html[data-view-mode="desktop"] .settings-panel {
   white-space: pre;
 }
 
-/* --- camp-as-route-map: numbered south gates + the gate list --- */
+/* --- camp-as-route-map: numbered south-gate overlay on the map (the button
+   list was removed — the map markers and [1-9] hotkeys are sufficient). --- */
 .map-gates {
   color: var(--bright);
   font-weight: bold;
   text-shadow: 0 0 6px rgba(255, 170, 68, 0.7);
-}
-.camp-gatelist {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 2.6rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-  padding: 0 1rem;
-  z-index: 5;
-}
-.camp-gate {
-  background: rgba(20, 14, 8, 0.82);
-  color: var(--bright);
-  border: 1px solid var(--flame-amber);
-  border-radius: 4px;
-  font: inherit;
-  font-size: clamp(0.75rem, 1.8vw, 1rem);
-  letter-spacing: 0.12em;
-  text-transform: lowercase;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-  transition: background 160ms, color 160ms;
-}
-.camp-gate:hover {
-  background: var(--flame-amber);
-  color: var(--bg);
 }
 .camp-tally .title-dex-cols {
   margin-top: 0.6rem;

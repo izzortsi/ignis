@@ -6,22 +6,25 @@
 // (grass→battle, water→tide, sites) are raised on the shared bus; App mounts
 // the Solid encounter over this scene and we resume when it clears.
 
-import { createSignal, createMemo, createEffect, onMount, onCleanup, For } from "solid-js";
+import { createSignal, createMemo, createEffect, onMount, onCleanup, For, Show } from "solid-js";
 import {
   makeLocalMap, computeVisible, tryMove, siteAt,
-  canSeeFrom, stepToward,
+  canSeeFrom, stepToward, spawnDuelSite,
   biomeOf, type Tile, type EncounterSite,
 } from "../../core/localmap";
 import {
   applySpoils, tendFires, currentStage, recoverMemoryInRun, type RunState,
 } from "../../core/run";
+import { stageFlavor, stageEncounterMul } from "../../core/stages";
 import { unrecoveredFlashbacks } from "../../core/flashback";
 import { rollRuin } from "../../core/ruin";
 import type { MapNode } from "../../core/routemap";
-import { isAlive, isBurnBright } from "../../core/cinder";
+import { isAlive, isBurnBright, gainXp } from "../../core/cinder";
+import { addCache, addRestorative, useCache } from "../../core/inventory";
 import { Rng, seedFrom } from "../../rng";
 import { requestEncounter, encounterRequest } from "../../core/encounter-bus";
 import { CINDER_FOLLOW } from "../../screen";
+import { InventoryDialog } from "../inventory/InventoryDialog";
 
 const BIOME_PHRASE: Record<string, string> = {
   forest: "wooded foothills", coast: "the coast", ruins: "glassed ruins",
@@ -49,15 +52,29 @@ const TILE: Record<Tile, { ch: string; cls: string } | null> = {
 export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () => void }) {
   const run = props.run;
   const map = makeLocalMap(run.runName, props.node);
-  const grassRng = new Rng(seedFrom("grass:" + run.runName + ":" + props.node.id));
-  let battleNonce = 0;
+  // Drop encounter spawn determinism (operator decision): mix fresh entropy
+  // into the grass rng so re-entering the same leg produces different
+  // encounters each visit.
+  const grassRng = new Rng(seedFrom("grass:" + run.runName + ":" + props.node.id + ":" + Date.now()));
+  // Drop battle determinism (operator decision): the nonce starts at a fresh
+  // value so the same battle scenario produces different outcomes each
+  // attempt. Each requestEncounter still increments to keep nonces unique.
+  let battleNonce = Date.now() & 0x7fffffff;
   const explored = new Set<number>();
 
   const [beat, bump] = createSignal(0, { equals: false }); // re-render on move
   const [flick, setFlick] = createSignal(0); // follower flicker
+  const biomePhrase = BIOME_PHRASE[biomeOf(props.node.rank)] ?? "the wilds";
+  const stageIntro = stageFlavor(run);
+  // The stage flavor (DESIGN.md §5) carries the long walk's character; when
+  // empty (stages 0/1/2 — the tutorial latitudes) we fall back to the
+  // generic explore prompt.
   const [msg, setMsg] = createSignal(
-    `A leg south — ${BIOME_PHRASE[biomeOf(props.node.rank)] ?? "the wilds"}. Explore; engage what you dare.`,
+    stageIntro.length > 0
+      ? `A leg south — ${biomePhrase}. ${stageIntro}`
+      : `A leg south — ${biomePhrase}. Explore; engage what you dare.`,
   );
+  const [inventoryOpen, setInventoryOpen] = createSignal(false);
   // The Cinder trails the cell you just left.
   let fx = map.px;
   let fy = map.py;
@@ -116,23 +133,39 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
         requestEncounter("battle", run, props.node, battleNonce++, "duel");
         return;
       case "camp":
-        tendFires(run);
-        applySpoils(run, { provisions: -0.05 });
-        setMsg("You make camp here; the fires are tended.");
-        site.resolved = true;
+        // B2.2: H point consumes a cache to restore coherence to full for
+        // all fires. If no cache, the H lies cold — nothing happens.
+        if (useCache(run.inventory)) {
+          tendFires(run);
+          for (const fire of run.circle) {
+            if (isAlive(fire)) fire.coherenceFrac = 1;
+          }
+          setMsg("You make camp here. The cache is spent; the fires are restored.");
+          site.resolved = true;
+        } else {
+          setMsg("The H lies cold — you have no supplies to make camp here.");
+          // Not marked resolved — the player can return if they find a cache.
+        }
         return;
       case "forage":
-        applySpoils(run, { provisions: 0.2 });
-        setMsg("A good patch — stores replenished.");
+        // B2.2: foraging finds a cache directly.
+        addCache(run.inventory, 1);
+        setMsg("A good patch — a cache of supplies.");
         site.resolved = true;
         return;
       case "ruin": {
         // Seeded mixed table — deterministic per this ruin (run/leg/x/y).
         const left = unrecoveredFlashbacks(run.meta.memories);
+        const lat = Math.max(0, props.node.rank) / 7;
         const roll = rollRuin(
           "ruin:" + run.runName + ":" + props.node.id + ":" + site.x + ":" + site.y,
           left.length,
+          lat,
         );
+        // Ruin XP grant: memory/relic/cache pay XP to the bonded fire as
+        // a felt reward — the Cinder learned something from walking here.
+        // Wild bands grant nothing (the battle pays).
+        if (roll.xp > 0) gainXp(run.circle[0], roll.xp);
         if (roll.kind === "wild") {
           // Something was nesting here — a rubble-pool wild springs.
           run.phase = "encounter";
@@ -143,13 +176,20 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
         if (roll.kind === "memory") {
           recoverMemoryInRun(run, left[0].id); // left.length>0 guaranteed here
         } else if (roll.kind === "relic") {
+          // B2.2: relic surfaces as a named item, persistent in meta.relics.
+          if (roll.relicName && !run.meta.relics.includes(roll.relicName)) {
+            run.meta.relics.push(roll.relicName);
+          }
+          // Keep the dex grant for backward compat (existing players see
+          // the relic in the species dex too).
           applySpoils(run, {
-            provisions: roll.provisions,
             dex: [{ species: roll.relicSpecies, trueClass: "inert", firstSeenStage: currentStage(run) }],
           });
-        } else {
-          applySpoils(run, { provisions: roll.provisions }); // cache
         }
+        // B2.2 cache + restorative grants. Applied directly to inventory,
+        // not via applySpoils.provisions (which goes through the bridge).
+        if (roll.caches > 0) addCache(run.inventory, roll.caches);
+        if (roll.restoratives > 0) addRestorative(run.inventory, roll.restoratives);
         setMsg(roll.message);
         site.resolved = true;
         return;
@@ -176,7 +216,10 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
     }
     if (advancePursuers()) return; // a hunting duelist caught you first
     const t = map.tiles[map.py * map.w + map.px];
-    const p = 0.07 + 0.16 * (props.node.danger ?? 0);
+    // Stage modifiers (DESIGN.md §5) tune encounter density — Sonoran/Sierra
+    // Madre dampen it, Yucatan/Isthmus amplify it, Andes pulls back so each
+    // fight is alpha-tier.
+    const p = (0.07 + 0.16 * (props.node.danger ?? 0)) * stageEncounterMul(run);
     if (t === "water" && grassRng.chance(p)) {
       run.phase = "encounter";
       pending = { site: null, back: "The tide recedes." };
@@ -190,14 +233,39 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
       pending = { site: null, back: "The thing in the rubble is dealt with." };
       requestEncounter("battle", run, props.node, battleNonce++, "rubble");
     }
+    // Random chance a duelist steps onto the road from elsewhere. Off-screen
+    // spawn; the existing pursuit machinery (canSeeFrom + stepToward) picks
+    // them up once their FOV reaches the player — they don't ambush, they
+    // hunt. Skip if a tile encounter just fired (the move beat is spent).
+    if (encounterRequest() === null) {
+      const spawnP = 0.02 + 0.04 * (props.node.danger ?? 0);
+      if (grassRng.chance(spawnP)) {
+        const spawned = spawnDuelSite(map, grassRng, map.px, map.py);
+        if (spawned !== null) {
+          setMsg("Someone has stepped onto the road from elsewhere.");
+        }
+      }
+    }
   }
 
   onMount(() => {
     const fl = window.setInterval(() => setFlick((v) => v + 1), 150);
     function onKey(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (inventoryOpen()) {
+        if (e.key === "Escape" || e.key === "Enter" || e.key === "i" || e.key === "I") {
+          e.preventDefault();
+          setInventoryOpen(false);
+        }
+        return;
+      }
       // While an encounter is up, it owns input.
       if (encounterRequest() !== null) return;
+      if (e.key === "i" || e.key === "I") {
+        e.preventDefault();
+        setInventoryOpen(true);
+        return;
+      }
       // Returned from an encounter we raised → resolve it.
       if (pending !== null) resolvePending();
       if (e.key === "Escape") { e.preventDefault(); return props.onLegDone(); }
@@ -278,8 +346,11 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
       </div>
       <p class="cave-msg">{msg()}</p>
       <p class="cave-hint">
-        arrows: walk · the Cinder lights the way & trails you · v: leave south · [Esc] abandon the leg
+        arrows: walk · [I] inventory · the Cinder lights the way & trails you · v: leave south · [Esc] abandon the leg
       </p>
+      <Show when={inventoryOpen()}>
+        <InventoryDialog run={run} onClose={() => setInventoryOpen(false)} />
+      </Show>
     </div>
   );
 }

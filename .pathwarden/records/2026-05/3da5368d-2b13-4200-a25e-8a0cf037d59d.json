@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "3da5368d-2b13-4200-a25e-8a0cf037d59d",
+  "recorded_at": "2026-05-22T04:49:18.069Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/CampScene.tsx",
+  "description": "Add Hearth notice state for cache tend feedback; Make cache tend visible and avoid wasting caches when Circle is already whole; Make cache tend button reactive and show Hearth notice",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "bd5c98039f87def29afa611c554d36f484fc0d6b6c121d19936da7ef5c0a301d",
+    "post_hash": "04ac1553de36384ef943ba7fc4455604197c2e1e906eca3d1fd7ff314e07615c"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/CampScene.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

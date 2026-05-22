@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "02046b30-7c7d-414d-978f-b6feacda7125",
+  "recorded_at": "2026-05-21T17:19:42.931Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/stages.ts",
+  "description": "Tune Sierra Madre rest and Andes encounter multipliers",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "e1a61bf8098654f4aa32120e9d534a996d6ad7f8f0b966dadc78cae7c94c0b0b",
+    "post_hash": "1a4450e8461696295aee916603f6f87ceeb7fbd5df31b7444feb38f4052b4cf3"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/stages.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

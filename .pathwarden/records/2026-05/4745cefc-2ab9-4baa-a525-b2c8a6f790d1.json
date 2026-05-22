@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "4745cefc-2ab9-4baa-a525-b2c8a6f790d1",
+  "recorded_at": "2026-05-21T17:31:38.203Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/styles/app.css",
+  "description": "Restack camp bottom-anchored elements with new flavor band; Move gate list up to clear the new hint position",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "2fe820773b933effbb3f2005892833ad8f41baf6b435355e8919d61e532fc55c",
+    "post_hash": "2f038c9a3edd4b5d07ad94e2628f0ef31a1c375464fccd45bb13fe4fb9de21ca"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/styles/app.css",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

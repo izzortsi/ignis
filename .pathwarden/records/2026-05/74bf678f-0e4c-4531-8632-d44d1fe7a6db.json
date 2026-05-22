@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "74bf678f-0e4c-4531-8632-d44d1fe7a6db",
+  "recorded_at": "2026-05-22T01:32:34.518Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/styles/app.css",
+  "description": "Add map-paths CSS class after map-scree",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "1ce9bee84e0c8db52b47f9ba59fe32730a212957a11f2bad2b550ee6ce2b8012",
+    "post_hash": "c8b052b128c7a1111de81cf68213cf54ba9d31fa163b8aac2b7ec7812c06b75f"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/styles/app.css",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

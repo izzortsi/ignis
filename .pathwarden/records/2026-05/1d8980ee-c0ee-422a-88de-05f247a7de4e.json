@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "1d8980ee-c0ee-422a-88de-05f247a7de4e",
+  "recorded_at": "2026-05-21T19:00:54.785Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/ui/map/CampScene.tsx",
+  "description": "Import buildStretches and StretchGate type; Add stretches memo keyed on gates' destination biomes; Render stretches layer between aurora and scree",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "8ef35a8f34e9a2645cd0214f02f0a2baec30f5b09821061f00eecc90f460e792",
+    "post_hash": "afc9d39c70899e06008554b6d3f0b45ab3a53f671f9db20a98636b9199c6971b"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/ui/map/CampScene.tsx",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

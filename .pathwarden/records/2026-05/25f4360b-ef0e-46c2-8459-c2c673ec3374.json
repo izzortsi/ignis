@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "25f4360b-ef0e-46c2-8459-c2c673ec3374",
+  "recorded_at": "2026-05-22T03:39:04.381Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/run.ts",
+  "description": "Add applyLegXp helper for leg-completion XP grants; Add applyLegXp function after tendFires",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "937f47ad31e8d8eda5c3a663ce7d02d12a6a734e67b7cc2a0ce5ee2ce6d09e32",
+    "post_hash": "e704fe498869ee4b55c5d484b98dbc9232ec3d29f68d57e43efabe477e9bc8c6"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/run.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

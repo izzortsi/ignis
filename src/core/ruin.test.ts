@@ -42,4 +42,44 @@ describe("ruin mixed table", () => {
       expect(roll.message.length).toBeGreaterThan(0);
     }
   });
+
+  it("B2.2 fields: cache band drops 1 cache; relic band names a relic", () => {
+    let cacheRolls = 0;
+    let relicRolls = 0;
+    for (let i = 0; i < 300; i++) {
+      const roll = rollRuin("b22-" + i, 2);
+      if (roll.kind === "cache") {
+        cacheRolls++;
+        expect(roll.caches).toBe(1);
+        expect(roll.relicName).toBe("");
+      }
+      if (roll.kind === "relic") {
+        relicRolls++;
+        expect(roll.relicName.length).toBeGreaterThan(0);
+        expect(roll.relicName).toBe(roll.relicSpecies); // mirrors legacy field
+        expect(roll.caches).toBe(0);
+      }
+      if (roll.kind === "memory" || roll.kind === "wild") {
+        expect(roll.caches).toBe(0);
+        expect(roll.relicName).toBe("");
+        expect(roll.restoratives).toBe(0);
+      }
+    }
+    expect(cacheRolls).toBeGreaterThan(0);
+    expect(relicRolls).toBeGreaterThan(0);
+  });
+
+  it("B2.2 restorative chance fires on cache/relic but not memory/wild", () => {
+    let resOnCacheRelic = 0;
+    let resOnMemoryWild = 0;
+    for (let i = 0; i < 500; i++) {
+      const roll = rollRuin("rest-" + i, 2);
+      if (roll.restoratives > 0) {
+        if (roll.kind === "cache" || roll.kind === "relic") resOnCacheRelic++;
+        else resOnMemoryWild++;
+      }
+    }
+    expect(resOnCacheRelic).toBeGreaterThan(0); // chance fires sometimes
+    expect(resOnMemoryWild).toBe(0); // never on memory or wild
+  });
 });

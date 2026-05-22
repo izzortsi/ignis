@@ -1,0 +1,42 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "aec0603c-7b1c-4844-b782-222644ea94e4",
+  "recorded_at": "2026-05-21T17:10:45.898Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/stages.ts",
+  "description": "Create stages.ts with per-stage modifier table and accessors",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "create"
+  },
+  "content": {
+    "pre_hash": null,
+    "post_hash": "e1a61bf8098654f4aa32120e9d534a996d6ad7f8f0b966dadc78cae7c94c0b0b"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/stages.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": false,
+    "observations": [
+      "operation_kind_defaulted: emitter did not specify operation_kind, defaulted to write"
+    ]
+  },
+  "provenance": {
+    "source": "live"
+  }
+}

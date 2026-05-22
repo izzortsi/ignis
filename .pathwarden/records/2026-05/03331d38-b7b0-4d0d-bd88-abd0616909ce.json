@@ -1,0 +1,40 @@
+{
+  "schema": "pathwarden.write_record/v1",
+  "record_id": "03331d38-b7b0-4d0d-bd88-abd0616909ce",
+  "recorded_at": "2026-05-21T05:46:47.886Z",
+  "path": "/home/istrozzi/Documents/kk-digital-docker/ignis/src/core/battle.ts",
+  "description": "Bump duel kindBonus — peer 3→8, rival 6→14 — to compensate for no-capture-no-absorb",
+  "emitter_id": "66ab056d502845ddb36aa35535caa063",
+  "operation": {
+    "kind": "overwrite"
+  },
+  "content": {
+    "pre_hash": "176d84c7d940bc3a2610e595bd2d1f1f1f369fa70e388e11115acac5dae283b7",
+    "post_hash": "fcd46ce2583bca738c92037001744f7d3120960daf9593cdc3c46e28ec9967fd"
+  },
+  "recovery": {
+    "archive_path": null
+  },
+  "repo": {
+    "root": "/home/istrozzi/Documents/kk-digital-docker/ignis",
+    "relative_path": "src/core/battle.ts",
+    "head": "ed7cc065c8c9cba2344f3fe101aeabd42f6e4bc3",
+    "branch": "dev-izzortsi-ignis-progression"
+  },
+  "storage": {
+    "emitter_primary": "grove_state",
+    "target_cast": "repo_local_fallback",
+    "target_cast_path": "/home/istrozzi/Documents/kk-digital-docker/ignis/.pathwarden/records/2026-05"
+  },
+  "conformance": {
+    "tier": "repo_aware",
+    "content_hash_present": true,
+    "repo_resolved": true,
+    "target_head_captured": true,
+    "operation_kind_explicit": true,
+    "observations": []
+  },
+  "provenance": {
+    "source": "live"
+  }
+}
