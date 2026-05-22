@@ -36,22 +36,37 @@ import {
   type StatKind,
 } from "../../core/battle-felt";
 import { stageFlavor } from "../../core/stages";
+import { fireVoice, type BattleEventKind } from "../../core/fireVoice";
+import { AttackAnimation } from "./AttackAnimation";
 import { InventoryDialog } from "../inventory/InventoryDialog";
 // Note: away from the Hearth/bonfire a Cinder shows as its mochi ENTITY
 // (petart creature), never a DoomFire flame — that look is the camp's alone.
 
 type Phase = "setup" | "battle" | "result";
 
-function eventFelt(e: TurnEvent): string {
+function eventFelt(e: TurnEvent, s: BattleState): string {
   const who = e.actor === "you" ? "Your fire" : "The other fire";
   if (e.text === "switch") return "You bring out another fire.";
   if (e.text === "flee-fail") return "You can't break away.";
   if (e.text === "catch-fail") return captureFelt(false, "");
-  if (e.text === "bank") return `${who} banks the embers.`;
-  if (e.text === "guard") return `${who} draws in.`;
   if (e.text === "stoke") return `${who} stokes.`;
-  if (e.miss) return `${who}: ${scatterFelt(false)}.`;
-  if (e.effectiveness !== undefined) return `${who}: ${pressFelt(e.effectiveness)}.`;
+  // The acting fire's Cinder — for voice. Player events read activeYou;
+  // foe events read s.foe.
+  const speaker = e.actor === "you" ? s.you[s.activeYou]?.cinder : s.foe.cinder;
+  if (!speaker) return `${who} acts.`;
+  if (e.text === "bank") {
+    return fireVoice(speaker, "battle-event", { battleEvent: "bank" });
+  }
+  if (e.text === "guard") {
+    return fireVoice(speaker, "battle-event", { battleEvent: "guard" });
+  }
+  if (e.miss) {
+    return fireVoice(speaker, "battle-event", { battleEvent: "miss" });
+  }
+  if (e.effectiveness !== undefined) {
+    const kind: BattleEventKind = e.effectiveness >= 1.0 ? "hit-strong" : "hit-weak";
+    return fireVoice(speaker, "battle-event", { battleEvent: kind });
+  }
   return `${who} acts.`;
 }
 
@@ -67,12 +82,38 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
   const [log, setLog] = createSignal<string[]>([]);
   const [resultMsg, setResultMsg] = createSignal("");
   const [tick, setTick] = createSignal(0); // animates the entity sprites
+  // Hit signal: which sprite gets the red flash on a non-miss damage event.
+  // Cleared after the animation lifetime (matches the burst keyframe ~220ms).
+  // AttackAnimation handles the projectile/burst overlay; the flash applies
+  // directly on the target sprite via CSS class so it stays sprite-sized.
+  const [youHit, setYouHit] = createSignal(false);
+  const [foeHit, setFoeHit] = createSignal(false);
+  // Per-target hit-flash timers — separate so a foe's hit doesn't clear
+  // your own (or vice versa) when they land close together. Animations
+  // queue and play sequentially (AttackAnimation owns the queue), so
+  // flashHit is invoked at each event's burst phase via the onHit prop
+  // — not all at once when the engine pushed both actors' events.
+  const hitClearTimers: { you: number | null; foe: number | null } = { you: null, foe: null };
+  function flashHit(target: "you" | "foe"): void {
+    if (target === "you") setYouHit(true);
+    else setFoeHit(true);
+    const prev = hitClearTimers[target];
+    if (prev !== null) clearTimeout(prev);
+    hitClearTimers[target] = window.setTimeout(() => {
+      if (target === "you") setYouHit(false);
+      else setFoeHit(false);
+      hitClearTimers[target] = null;
+    }, 240);
+  }
   const [itemOpen, setItemOpen] = createSignal(false);
 
   function pushLogFrom(len: number): void {
     if (s.log.length <= len) return;
-    const add = s.log.slice(len).map(eventFelt).filter((t) => t.length > 0);
+    const add = s.log.slice(len).map((e) => eventFelt(e, s)).filter((t) => t.length > 0);
     setLog([...log(), ...add].slice(-4));
+    // Hit flashes are driven by AttackAnimation's per-event onHit callback
+    // (above), so each event flashes at the moment its projectile lands —
+    // not all at once when step() pushed both actors' events.
   }
 
   function resolveEnd(): void {
@@ -193,7 +234,7 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
   // is the only place a Cinder is drawn as literal fire.
   // `c` is the reactive accessor (me/foe). Calling c() reads `beat()`, so every
   // memo here re-tracks when bump() fires after a step() — bar/sprite update.
-  function CinderSprite(p: { c: () => Combatant }) {
+  function CinderSprite(p: { c: () => Combatant; hit: () => boolean }) {
     const parts = () => partsForName(p.c().cinder.name);
     // Same art everywhere: one fixed stage; idle while it burns; the smoke
     // frame once it's out (KO'd this battle or snuffed). No damage/status
@@ -208,7 +249,13 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
       return f[tick() % f.length];
     };
     const col = () => "#" + ((HUE_COLOR[parts().hue] ?? 0xffaa44) >>> 0).toString(16).padStart(6, "0");
-    return <pre class="bt-sprite" style={{ color: col() }}>{frame().join("\n")}</pre>;
+    return (
+      <pre
+        class="bt-sprite"
+        classList={{ "is-hit": p.hit() }}
+        style={{ color: col() }}
+      >{frame().join("\n")}</pre>
+    );
   }
 
   function Gauge(p: { c: () => Combatant; label: string }) {
@@ -343,10 +390,11 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
         </Show>
 
         <Show when={phase() === "battle"}>
-          <div class="enc-body">
+          <div class="enc-body" style={{ position: "relative" }}>
+            <AttackAnimation events={() => { beat(); return s.log; }} onHit={flashHit} />
             <div class="bt-side">
               <div class="enc-fire">
-                <CinderSprite c={me} />
+                <CinderSprite c={me} hit={youHit} />
               </div>
               <Gauge c={me} label={me().cinder.name} />
               <VitalityGauge c={me} />
@@ -360,7 +408,7 @@ export function BattleEncounter(props: { run: RunState; node: MapNode; nonce?: n
             </div>
             <div class="bt-side">
               <div class="enc-fire">
-                <CinderSprite c={foe} />
+                <CinderSprite c={foe} hit={foeHit} />
               </div>
               <Gauge c={foe} label={s.setup.foeName} />
               <VitalityGauge c={foe} />

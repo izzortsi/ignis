@@ -38,7 +38,7 @@ import {
   type CapturedSnapshot,
 } from "./run";
 import { stageFoeLevelBonus } from "./stages";
-import { useRestorative } from "./inventory";
+import { useRestorative, useCache } from "./inventory";
 import type { MapNode } from "./routemap";
 
 // --- shared with the Reading calibration (lifted from duel.ts) --------------
@@ -146,6 +146,10 @@ export interface TurnEvent {
   miss?: boolean;
   damage?: number;
   status?: Condition;
+  // The move's wheel type, populated for offensive resolutions so the UI
+  // animation layer (AttackAnimation) can pick visuals per type. Optional;
+  // bank/guard/switch/flee events leave it unset.
+  moveType?: WheelType;
 }
 
 export interface BattleState {
@@ -183,16 +187,16 @@ export const MOVE_POOL: Technique[] = [
   { id: "entropic-blast", name: "Entropic Blast", kind: "press", stance: "neutral", type: "entropy", desc: "A blast of pure disorder — one clean strike.", power: 1.05, accuracyBias: 0, costVitality: 0, priority: 0, learn: { minLevel: 1 } },
   // The designed informational skills (DESIGN.skills §4) — taught at the
   // ancient fire as the fire grows ready (PROVISIONAL learn curve).
-  { id: "maxwells-cut", name: "Maxwell's Cut", kind: "press", stance: "neutral", type: "negentropy", desc: "A demon's sorting cut — slips past much of the foe's guard.", power: 0.95, accuracyBias: 0.08, costVitality: 0.10, priority: 0, pierce: 0.35, learn: { minLevel: 2 } },
+  { id: "maxwells-cut", name: "Maxwell's Cut", kind: "press", stance: "neutral", type: "negentropy", desc: "A demon's sorting cut — slips past much of the foe's guard.", power: 1.20, accuracyBias: 0.08, costVitality: 0.10, priority: 0, pierce: 0.35, learn: { minLevel: 2 } },
   { id: "shannon-jam", name: "Shannon Jam", kind: "feint", stance: "neutral", type: "noise", desc: "Floods the foe with noise — its reads swim and scatter.", power: 0, accuracyBias: 0, costVitality: 0.12, priority: 1, status: { cond: "jammed", chance: 1, target: "foe", turns: 3 }, learn: { minLevel: 3 } },
   { id: "error-correct", name: "Error-Correct", kind: "bank", stance: "neutral", type: "negentropy", desc: "Error-corrects itself — restores coherence and clears one fouling. A heavy draw on the fire's breath.", power: 0, accuracyBias: 0, costVitality: 0.35, priority: 0, learn: { minLevel: 3 } },
-  { id: "decoherence-cascade", name: "Decoherence Cascade", kind: "scatter", stance: "neutral", type: "entropy", desc: "Seeds disorder — the foe keeps coming apart for several turns.", power: 0.5, accuracyBias: 0, costVitality: 0.12, priority: -1, status: { cond: "decohering", chance: 0.9, target: "foe", turns: 3 }, learn: { minLevel: 4 } },
+  { id: "decoherence-cascade", name: "Decoherence Cascade", kind: "scatter", stance: "neutral", type: "entropy", desc: "Seeds disorder — the foe keeps coming apart for several turns.", power: 0.75, accuracyBias: 0, costVitality: 0.12, priority: -1, status: { cond: "decohering", chance: 0.9, target: "foe", turns: 4 }, learn: { minLevel: 4 } },
   { id: "anneal", name: "Anneal", kind: "guard", stance: "neutral", type: "signal", desc: "Sets hard — far tougher for a turn, and the decohering stops.", power: 0, accuracyBias: 0, costVitality: 0.22, priority: 2, status: { cond: "annealed", chance: 1, target: "self", turns: 2 }, clears: "decohering", learn: { minLevel: 5 } },
-  { id: "negentropic-siphon", name: "Negentropic Siphon", kind: "press", stance: "neutral", type: "negentropy", desc: "Draws order out of the foe — damages it and mends itself.", power: 0.85, accuracyBias: 0, costVitality: 0.18, priority: 0, siphon: 0.5, learn: { minLevel: 5 } },
-  { id: "compression-burst", name: "Compression Burst", kind: "press", stance: "neutral", type: "entropy", desc: "Feeds on the foe's disorder — the more frayed it is, the harder this bites.", power: 0.7, accuracyBias: 0, costVitality: 0.12, priority: 0, compresses: true, learn: { minLevel: 6 } },
+  { id: "negentropic-siphon", name: "Negentropic Siphon", kind: "press", stance: "neutral", type: "negentropy", desc: "Draws order out of the foe — damages it and mends itself.", power: 1.10, accuracyBias: 0, costVitality: 0.18, priority: 0, siphon: 0.6, learn: { minLevel: 5 } },
+  { id: "compression-burst", name: "Compression Burst", kind: "press", stance: "neutral", type: "entropy", desc: "Feeds on the foe's disorder — the more frayed it is, the harder this bites.", power: 1.0, accuracyBias: 0, costVitality: 0.12, priority: 0, compresses: true, learn: { minLevel: 6 } },
   { id: "chirality-lock", name: "Chirality Lock", kind: "feint", stance: "neutral", type: "signal", desc: "Pins the foe to its hand — it cannot slip, and the next blows tell.", power: 0, accuracyBias: 0.05, costVitality: 0.14, priority: 1, status: { cond: "signal-locked", chance: 1, target: "foe", turns: 2 }, learn: { minLevel: 7 } },
-  { id: "landauers-toll", name: "Landauer's Toll", kind: "press", stance: "neutral", type: "entropy", desc: "Erases the foe's order — a huge blow that costs the fire dearly.", power: 1.6, accuracyBias: -0.05, costVitality: 0.30, priority: 0, learn: { minLevel: 8 } },
-  { id: "joint-read", name: "Joint Read", kind: "joint", stance: "neutral", type: "signal", desc: "Two fires read as one — a stronger, surer strike.", power: 1.15, accuracyBias: 0.1, costVitality: 0.16, priority: 0, learn: { minLevel: 8, minBond: 0.2 } },
+  { id: "landauers-toll", name: "Landauer's Toll", kind: "press", stance: "neutral", type: "entropy", desc: "Erases the foe's order — a huge blow that costs the fire dearly.", power: 2.6, accuracyBias: -0.05, costVitality: 0.30, priority: 0, learn: { minLevel: 8 } },
+  { id: "joint-read", name: "Joint Read", kind: "joint", stance: "neutral", type: "signal", desc: "Two fires read as one — a stronger, surer strike.", power: 1.6, accuracyBias: 0.1, costVitality: 0.16, priority: 0, learn: { minLevel: 8, minBond: 0.2 } },
 ];
 
 export function learnableMoves(c: Cinder): Technique[] {
@@ -273,8 +277,11 @@ const RARITY_MUL: Record<Rarity, number> = { common: 1.0, uncommon: 1.08, rare: 
 
 // Level-driven (DESIGN.skills — vitality is now purely the mana budget, it no
 // longer scales the HP pool; bond still grows the bonded fire). PROVISIONAL.
+// Per-level growth reduced 8 → 5 (operator decision): "the further we go the
+// longer the battles" — smaller HP pools make late-game fights snappier.
+// L1=44, L6=69, L12=99 (was L12=132). Skill power numbers stay meaningful.
 export function maxCoherence(c: Cinder): number {
-  const base = 44 + 8 * (c.level - 1);
+  const base = 44 + 5 * (c.level - 1);
   const bondMul = c.bonded ? 1 + 0.15 * c.bond : 1;
   return Math.round(base * bondMul);
 }
@@ -389,7 +396,15 @@ export function makeBattle(run: RunState, node: MapNode, nonce = 0, source: Batt
     : kind === "rival" ? Math.round(lat * 2)
     : kind === "peer"  ? Math.round(lat * 1)
     : 0;
-  foe.level = clampInt(2 + Math.round(lat * 8) + tilt + stageFoeLevelBonus(run), 1, 12);
+  const rawLevel = 2 + Math.round(lat * 8) + tilt + stageFoeLevelBonus(run);
+  // Cap the level gap (operator decision): foes can't be more than 2 levels
+  // above the strongest alive player fire. Prevents runaway difficulty when
+  // a player falls behind the XP curve. Latitude scaling still applies in
+  // the early/mid game where the player is at or above the curve.
+  const playerLevels = run.circle.filter(isAlive).map((c) => c.level);
+  const playerStrongest = playerLevels.length > 0 ? Math.max(...playerLevels) : 1;
+  const capGap = 2;
+  foe.level = clampInt(Math.min(rawLevel, playerStrongest + capGap), 1, 12);
   foe.vitality = clamp(0.7 + (kind === "rival" ? 0.15 : isWild ? -0.1 : 0) + lat * 0.1, 0.25, 1);
   return {
     kind,
@@ -511,7 +526,7 @@ function resolveMove(
     // Error-Correct: recover coherence + clear one self-fouling, but it does
     // NOT feed (no feedReading) and spends a heavy chunk of breath — so it
     // can't be chained (it drains the very budget it needs).
-    attacker.coherence = Math.min(attacker.maxCoherence, attacker.coherence + Math.round(attacker.maxCoherence * 0.18));
+    attacker.coherence = Math.min(attacker.maxCoherence, attacker.coherence + Math.round(attacker.maxCoherence * 0.28));
     const i = attacker.conds.findIndex((a) => SELF_DEBUFFS.includes(a.cond));
     if (i >= 0) attacker.conds.splice(i, 1);
     spendVitality(attacker, move.costVitality);
@@ -540,7 +555,12 @@ function resolveMove(
   const cond = stageConditions(run, sample);
   if (hasCond(attacker, "spore-fouled")) cond.sporeLoad = clamp(cond.sporeLoad + 0.3, 0, 1);
 
-  feedReading(ac); // every Reading is food (DESIGN §3)
+  // Note: in-battle vitality is the mana model's spendable budget (DESIGN.md
+  // §8 / mana model). feedReading is intentionally NOT called here — the
+  // bible's "every Reading is food" promise is honored by tide encounters and
+  // camp tending, NOT by battle resolutions, because restoring vitality
+  // every cast cancels skill costs and breaks resource pressure. Misses still
+  // call expelNoise (the punishment side stays); the food side does not.
   const reading =
     move.kind === "joint" && benchAllies(s).length > 0
       ? jointReading(truth, [readProfile(ac), readProfile(benchAllies(s)[0].cinder)], cond, rng)
@@ -548,7 +568,7 @@ function resolveMove(
 
   let mis = miscalibration(truth, reading.band);
   if (hasCond(attacker, "dazzled")) mis = Math.min(4, mis + 1);
-  if (hasCond(attacker, "jammed")) mis = Math.min(4, mis + 1); // Shannon Jam
+  if (hasCond(attacker, "jammed")) mis = Math.min(4, mis + 2); // Shannon Jam (heavier — was +1)
   if (hasCond(attacker, "stoked")) mis = Math.max(0, mis - 1);
 
   const hitThreshold = move.kind === "feint" ? 4 : 2; // feint always "lands" as a presence attack
@@ -556,14 +576,19 @@ function resolveMove(
 
   if (miss) {
     expelNoise(ac); // a scattered read costs the fire
-    s.log.push({ actor: who, text: "scatter", band: reading.band, miss: true });
+    // Battle floor: a miss must never self-snuff (DESIGN.md §8 / mana model).
+    // expelNoise uses a raw clamp01 (correct for tides where poison can
+    // genuinely kill the fire); battles guard at the call site so a long
+    // streak of misses with no feedReading recovery can't drain past zero.
+    ac.vitality = Math.max(DEATH_FLOOR, ac.vitality);
+    s.log.push({ actor: who, text: "scatter", band: reading.band, miss: true, moveType: move.type });
   } else {
     const quality = 1 - mis / 4; // 0..1, how clean the read
     const eff = spectralFit(ac.spectral, sample) * chiralMul(move.stance, truth);
     const rattleMul = hasCond(attacker, "rattled") ? 0.85 : 1;
     const bankedMul = hasCond(defender, "banked") ? 1 / 1.3 : 1;
-    const annealMul = hasCond(defender, "annealed") ? 1 / 1.5 : 1; // Anneal
-    const lockMul = hasCond(defender, "signal-locked") ? 1.15 : 1; // Chirality Lock
+    const annealMul = hasCond(defender, "annealed") ? 1 / 2.0 : 1; // Anneal (tougher — was 1/1.5)
+    const lockMul = hasCond(defender, "signal-locked") ? 1.35 : 1; // Chirality Lock (sharper — was 1.15)
     // The informational type wheel (DESIGN.skills §2): the move type against
     // the defender's last move type, plus the entropy-vulnerable condition.
     const wheelM = defender.lastType !== null ? wheelMul(move.type, defender.lastType) : 1;
@@ -575,7 +600,7 @@ function resolveMove(
     // Compression Burst: the more frayed the foe, the harder it bites.
     if (move.compresses) {
       const disorder = 1 - defender.coherence / Math.max(1, defender.maxCoherence);
-      dmg *= 1 + 0.9 * disorder + 0.08 * defender.conds.length;
+      dmg *= 1 + 1.6 * disorder + 0.08 * defender.conds.length;
     }
     const crit = reading._sharpness > 0.45 && rng.chance(critChance(ac));
     if (crit) dmg *= 1.5;
@@ -588,7 +613,7 @@ function resolveMove(
         attacker.coherence + Math.max(1, Math.round(dmg * move.siphon)),
       );
     }
-    s.log.push({ actor: who, text: move.kind, band: reading.band, effectiveness: eff, damage: dmg });
+    s.log.push({ actor: who, text: move.kind, band: reading.band, effectiveness: eff, damage: dmg, moveType: move.type });
 
     if (move.status && rng.chance(move.status.chance)) {
       addCond(move.status.target === "self" ? attacker : defender, move.status.cond, move.status.turns);
@@ -721,7 +746,7 @@ function foeTurn(s: BattleState, run: RunState, rng: Rng): void {
 function bleed(c: Combatant): void {
   // Decoherence Cascade: a per-turn coherence bleed (DESIGN.skills §4/§5).
   if (c.conds.some((a) => a.cond === "decohering")) {
-    c.coherence = Math.max(0, c.coherence - Math.max(1, Math.round(c.maxCoherence * 0.06)));
+    c.coherence = Math.max(0, c.coherence - Math.max(1, Math.round(c.maxCoherence * 0.09)));
   }
 }
 
@@ -833,14 +858,29 @@ export function finalizeBattle(s: BattleState, run: RunState, staked: boolean): 
     if (run.circle[0].bonded) out.bondMoment = `out-read ${s.setup.foeName} at the ridge`;
     return out;
   }
+  // Duel consequence (operator decision): a peer/rival fight that ends in
+  // walk/flee/lose-unstaked pays a cache first; if no cache, the tribe pays
+  // in integrity. Wild fights keep their lighter consequences — the wilds
+  // were never the tribe's quarrel.
+  const isDuel = s.setup.kind === "peer" || s.setup.kind === "rival";
+
   if (s.result === "lose") {
     if (staked) extinguishFire(run, fielded); // the snuff (bonded → memorial + re-ember)
     // Softened (PROVISIONAL): a loss is a real blow but not a 2-strike end —
     // the tribe takes several to be overrun. Staked loss costs less (the fire
     // paid with itself). Felt-surfaced (no number) so the drain is legible.
-    return { campDamage: staked ? 0.15 : 0.2 };
+    // Duels: cache absorbs the unstaked loss; else full 0.20 damage.
+    let dmg = staked ? 0.15 : 0.2;
+    if (isDuel && !staked && useCache(run.inventory)) dmg = 0;
+    return { campDamage: dmg };
   }
-  // fled / walked
+  // fled / walked — for duels, similar weight (you didn't finish what the
+  // duelist started); cache absorbs, else 0.10 damage. Wild encounters keep
+  // their light consequences (fled costs a small trickle, walked is free).
+  if (isDuel) {
+    const dmg = useCache(run.inventory) ? 0 : 0.10;
+    return { campDamage: dmg };
+  }
   return { campDamage: s.result === "fled" ? 0.05 : 0 };
 }
 

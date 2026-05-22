@@ -57,5 +57,8 @@ export function provisionsDeltaToCaches(delta: number): number {
   // Round, not floor — a +0.18 delta becomes +1, a -0.05 becomes 0 (lost
   // to rounding, which is fine: small negative deltas were "a bit of wear"
   // not "consume a cache" in the old model).
-  return Math.round(delta / PROVISIONS_PER_CACHE);
+  // `|| 0` collapses -0 to +0 — Math.round of a small negative (e.g.
+  // -0.05 / 0.18 ≈ -0.27) returns -0 in JS, which `toBe(0)` rejects via
+  // Object.is equality.
+  return Math.round(delta / PROVISIONS_PER_CACHE) || 0;
 }

@@ -1,5 +1,6 @@
 import { For, Show } from "solid-js";
 import type { RunState } from "../../core/run";
+import { tribeFelt } from "../../core/battle-felt";
 
 export function InventoryDialog(props: {
   run: RunState;
@@ -55,6 +56,15 @@ export function InventoryDialog(props: {
               </Show>
             </div>
           </div>
+          <p class="title-dex-cap">the tribe</p>
+          <p
+            classList={{
+              "is-low": tribeFelt(props.run.campIntegrity).low,
+            }}
+          >
+            {tribeFelt(props.run.campIntegrity).word}
+            {tribeFelt(props.run.campIntegrity).low ? " — it can take little more" : ""}
+          </p>
         </Show>
 
         <p class="title-hint">{usableOnly() ? "[1] use · esc / i close" : "esc / i / click away to close"}</p>

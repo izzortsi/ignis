@@ -98,29 +98,45 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
     bump(0);
   }
 
+  // Operator cap: only ONE duelist hunts at a time. Pre-placed `D`s wait
+  // until the current pursuer is settled before any of them wakes.
+  const hasActivePursuer = (): boolean => {
+    for (const s of awoke) if (!s.resolved) return true;
+    return false;
+  };
+
   // A duel `D` sleeps until it sees you with YOUR exact area of vision; then
   // it hunts — one step per your step — and springs the duel when it catches
   // up (reaches you or stands adjacent). Returns true if it raised the duel.
+  // At most one duelist is ever in the awake set; others stay dormant.
   function advancePursuers(): boolean {
     const R = lightRadius();
-    let moved = false;
-    for (const s of map.sites) {
-      if (s.kind !== "duel" || s.resolved) continue;
-      if (!awoke.has(s)) {
-        if (!canSeeFrom(map, s.x, s.y, map.px, map.py, R)) continue;
-        awoke.add(s);
-        setMsg("A duelist spots you across the dark — and starts toward you.");
-      }
-      const next = stepToward(map, s.x, s.y, map.px, map.py);
-      s.x = next[0];
-      s.y = next[1];
-      moved = true;
-      if (Math.max(Math.abs(s.x - map.px), Math.abs(s.y - map.py)) <= 1) {
-        triggerSite(s); // it catches you — the duel
-        return true;
+    // Find the current active pursuer (at most one).
+    let active: EncounterSite | null = null;
+    for (const s of awoke) {
+      if (!s.resolved && s.kind === "duel") { active = s; break; }
+    }
+    // If no one is hunting, wake at most one fresh duelist whose FOV reaches us.
+    if (active === null) {
+      for (const s of map.sites) {
+        if (s.kind !== "duel" || s.resolved || awoke.has(s)) continue;
+        if (canSeeFrom(map, s.x, s.y, map.px, map.py, R)) {
+          awoke.add(s);
+          setMsg("A duelist spots you across the dark — and starts toward you.");
+          active = s;
+          break;
+        }
       }
     }
-    if (moved) bump(0);
+    if (active === null) return false;
+    const next = stepToward(map, active.x, active.y, map.px, map.py);
+    active.x = next[0];
+    active.y = next[1];
+    bump(0);
+    if (Math.max(Math.abs(active.x - map.px), Math.abs(active.y - map.py)) <= 1) {
+      triggerSite(active); // it catches you — the duel
+      return true;
+    }
     return false;
   }
 
@@ -236,8 +252,9 @@ export function CaveScene(props: { run: RunState; node: MapNode; onLegDone: () =
     // Random chance a duelist steps onto the road from elsewhere. Off-screen
     // spawn; the existing pursuit machinery (canSeeFrom + stepToward) picks
     // them up once their FOV reaches the player — they don't ambush, they
-    // hunt. Skip if a tile encounter just fired (the move beat is spent).
-    if (encounterRequest() === null) {
+    // hunt. Skip if a tile encounter just fired (the move beat is spent), or
+    // if a duelist is already hunting (operator cap: one at a time).
+    if (encounterRequest() === null && !hasActivePursuer()) {
       const spawnP = 0.02 + 0.04 * (props.node.danger ?? 0);
       if (grassRng.chance(spawnP)) {
         const spawned = spawnDuelSite(map, grassRng, map.px, map.py);

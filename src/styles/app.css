@@ -2390,6 +2390,111 @@ html[data-view-mode="desktop"] .settings-panel {
 .bt-move-sub { color: #7a8090; font-size: 0.82em; }
 .bt-btn { margin: 0 0.3rem; }
 .bt-result { color: #ff8a3c; font-weight: bold; font-size: 1.1em; margin: 1rem 0; }
+
+/* === Attack animations (DESIGN: skills feel real) ====================== */
+/* The AttackAnimation overlay sits absolute-positioned over the .enc-body
+   row. Trail glyph travels caster→target; entropy gets a burst + hit flash.
+   Pointer events disabled so battle controls stay clickable underneath. */
+.atk-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+.atk-trail {
+  position: absolute;
+  top: 35%;
+  left: 0;
+  font-size: 3.6rem;
+  font-weight: bold;
+  line-height: 1;
+  animation: atk-travel-rtl 280ms linear forwards;
+  will-change: transform, opacity;
+}
+.atk-trail.atk-reverse {
+  /* foe → you: start at right, travel left */
+  left: auto;
+  right: 0;
+  animation-name: atk-travel-ltr;
+}
+.atk-trail.atk-miss {
+  /* a scattered read — the projectile peters out, doesn't reach. */
+  animation-name: atk-travel-miss-rtl;
+}
+.atk-trail.atk-miss.atk-reverse {
+  animation-name: atk-travel-miss-ltr;
+}
+.atk-burst {
+  position: absolute;
+  top: 30%;
+  right: 12%;
+  font-size: 4.2rem;
+  font-weight: bold;
+  line-height: 1;
+  animation: atk-burst 220ms ease-out forwards;
+  will-change: transform, opacity;
+}
+.atk-burst.atk-reverse {
+  /* foe attacked you — burst sits on your side (left) */
+  right: auto;
+  left: 12%;
+}
+/* The bt-sprite.is-hit keyframe (below) replaces the previous wide-column
+   .atk-hit-flash overlay so the flash now stays bound to the sprite glyphs. */
+.bt-sprite.is-hit {
+  animation: bt-sprite-hit 240ms ease-out forwards;
+}
+@keyframes bt-sprite-hit {
+  0%   { filter: brightness(1) drop-shadow(0 0 0 transparent); }
+  30%  { filter: brightness(1.8) drop-shadow(0 0 12px rgba(232, 86, 86, 0.9)); color: #ff6655; }
+  100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
+}
+
+/* Per-type colors */
+.atk-entropy { color: #ff7733; text-shadow: 0 0 12px rgba(255, 119, 51, 0.85), 0 0 24px rgba(232, 86, 86, 0.5); }
+.atk-negentropy { color: #78aaff; text-shadow: 0 0 12px rgba(120, 170, 255, 0.85); }
+.atk-noise { color: #aaaaaa; text-shadow: 0 0 8px rgba(170, 170, 170, 0.7); }
+.atk-signal { color: #f0c850; text-shadow: 0 0 12px rgba(240, 200, 80, 0.85); }
+
+/* Keyframes — left→right travel for "you" cast, right→left for foe.
+   Trail fades to opacity 0 at 100% so the projectile self-cleans visually
+   even if DOM teardown timing leaves the element briefly in flight when
+   the next animation's element mounts. */
+@keyframes atk-travel-rtl {
+  0%   { transform: translateX(0) translateY(0) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { transform: translateX(calc(100vw * 0.40)) translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateX(calc(100vw * 0.45)) translateY(0) scale(1); opacity: 0; }
+}
+@keyframes atk-travel-ltr {
+  0%   { transform: translateX(0) translateY(0) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { transform: translateX(calc(100vw * -0.40)) translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateX(calc(100vw * -0.45)) translateY(0) scale(1); opacity: 0; }
+}
+@keyframes atk-travel-miss-rtl {
+  0%   { transform: translateX(0) scale(0.6); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { transform: translateX(calc(100vw * 0.25)) scale(0.9); opacity: 0.4; }
+  100% { transform: translateX(calc(100vw * 0.3)) scale(0.4); opacity: 0; }
+}
+@keyframes atk-travel-miss-ltr {
+  0%   { transform: translateX(0) scale(0.6); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { transform: translateX(calc(100vw * -0.25)) scale(0.9); opacity: 0.4; }
+  100% { transform: translateX(calc(100vw * -0.3)) scale(0.4); opacity: 0; }
+}
+@keyframes atk-burst {
+  0%   { transform: scale(0.4); opacity: 0; }
+  35%  { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(2.0); opacity: 0; }
+}
+@keyframes atk-hit-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
 .bt-sprite {
   margin: 0;
   font-family: 'Menlo', 'Consolas', 'Courier New', monospace;

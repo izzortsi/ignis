@@ -5,8 +5,9 @@
 // camp bar moves. A live Hearth burns beside the sample.
 
 import { createSignal, onMount, onCleanup, Show, For } from "solid-js";
-import { bandMeaning, sharpness, spectralFit } from "../../core/reading";
+import { sharpness, spectralFit, type Band } from "../../core/reading";
 import { bondedCinder, applyEncounterOutcome, currentStage, stageConditions, type RunState } from "../../core/run";
+import { fireVoice } from "../../core/fireVoice";
 import { readProfile, cinderStage, xpProgress, isBurnBright } from "../../core/cinder";
 import { tribeFelt } from "../../core/battle-felt";
 import { stageFlavor } from "../../core/stages";
@@ -164,7 +165,7 @@ export function TideEncounter(props: { run: RunState }) {
                   <For each={bands()}>
                     {(b, i) => (
                       <p classList={{ "enc-band": true, "is-latest": i() === bands().length - 1 }}>
-                        {bandMeaning(b as never)}
+                        {fireVoice(bondedCinder(run), "read-band", { band: b as Band })}
                       </p>
                     )}
                   </For>
